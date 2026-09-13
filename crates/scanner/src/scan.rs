@@ -254,6 +254,7 @@ pub fn scan_directory(
     max_files: u32,
     preview_lines: usize,
     mut report: Option<&mut ScanReport>,
+    exclude_dirs: &[String],
 ) -> std::io::Result<Vec<FileInfo>> {
     let root = root.canonicalize()?;
     if !root.is_dir() {
@@ -293,6 +294,10 @@ pub fn scan_directory(
         for component in rel.components() {
             let comp = component.as_os_str().to_str().unwrap_or("");
             if skip_dirs.contains(comp) || comp.ends_with(".egg-info") {
+                skip = true;
+                break;
+            }
+            if exclude_dirs.iter().any(|d| d == comp) {
                 skip = true;
                 break;
             }

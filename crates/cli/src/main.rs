@@ -167,7 +167,7 @@ fn cmd_map(path: &str, top: usize, format: MapFormat, term: &Term) -> Result<()>
 
     let path = Path::new(path);
     let mut report = ScanReport::default();
-    let files = scan_directory(path, 200 * 1024, 1000, 2, Some(&mut report))?;
+    let files = scan_directory(path, 200 * 1024, 1000, 2, Some(&mut report), &[])?;
     let project = ProjectContext {
         name: path.to_string_lossy().into_owned(),
         root: path.to_string_lossy().into_owned(),
@@ -264,11 +264,21 @@ async fn cmd_scan(
         cfg.output_dir = o;
     }
 
+    let exclude_dirs: Vec<String> = {
+        let p = Path::new(&cfg.output_dir);
+        p.components()
+            .filter_map(|c| c.as_os_str().to_str())
+            .filter(|s| *s != "." && *s != "..")
+            .take(1)
+            .map(|s| s.to_string())
+            .collect()
+    };
+
     let project = if is_url(path_or_url) {
-        repowiki_ingest::ingest_github(path_or_url, cfg.max_file_size, cfg.max_files, false)
+        repowiki_ingest::ingest_github(path_or_url, cfg.max_file_size, cfg.max_files, false, &exclude_dirs)
             .map_err(|e| anyhow::anyhow!(e))?
     } else {
-        repowiki_ingest::ingest_local(path_or_url, cfg.max_file_size, cfg.max_files)?
+        repowiki_ingest::ingest_local(path_or_url, cfg.max_file_size, cfg.max_files, &exclude_dirs)?
     };
 
     println!();
@@ -460,7 +470,7 @@ async fn cmd_index(path: &str) -> Result<()> {
 
     let cfg = Config::load();
     let p = Path::new(path);
-    let files = repowiki_ingest::ingest_local(path, cfg.max_file_size, cfg.max_files)?;
+    let files = repowiki_ingest::ingest_local(path, cfg.max_file_size, cfg.max_files, &[])?;
 
     println!(
         "{} {} ({} files)",
@@ -520,10 +530,10 @@ async fn cmd_chat(
     println!("{}", style("Indexing repository...").dim());
 
     let project = if is_url(path_or_url) {
-        repowiki_ingest::ingest_github(path_or_url, cfg.max_file_size, cfg.max_files, false)
+        repowiki_ingest::ingest_github(path_or_url, cfg.max_file_size, cfg.max_files, false, &[])
             .map_err(|e| anyhow::anyhow!(e))?
     } else {
-        repowiki_ingest::ingest_local(path_or_url, cfg.max_file_size, cfg.max_files)?
+        repowiki_ingest::ingest_local(path_or_url, cfg.max_file_size, cfg.max_files, &[])?
     };
 
     let (rag, index_cached) = load_or_build_index(&project, None);

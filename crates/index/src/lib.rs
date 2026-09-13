@@ -212,7 +212,7 @@ fn module_name_for(path: &str) -> String {
         "root".to_string()
     } else {
         let first = parts[0];
-        if matches!(first, "src" | "lib" | "pkg" | "internal" | "app") && parts.len() > 2 {
+        if matches!(first, "src" | "lib" | "pkg" | "internal" | "app" | "crates") && parts.len() > 2 {
             parts[1].to_string()
         } else {
             first.to_string()

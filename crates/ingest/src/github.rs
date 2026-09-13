@@ -96,6 +96,7 @@ pub fn ingest_github(
     max_file_size: u64,
     max_files: u32,
     force_reclone: bool,
+    exclude_dirs: &[String],
 ) -> Result<ProjectContext, String> {
     let (host, owner, repo) =
         parse_git_url(url).ok_or_else(|| format!("Can't parse git URL: {}", url))?;
@@ -107,7 +108,7 @@ pub fn ingest_github(
             remove_dir_all(&dest).map_err(|e| format!("Failed to remove cached clone: {}", e))?;
         } else {
             info!("Using cached clone: {}", dest.display());
-            return ingest_local(&dest, max_file_size, max_files)
+            return ingest_local(&dest, max_file_size, max_files, exclude_dirs)
                 .map_err(|e| format!("Failed to ingest cached clone: {}", e));
         }
     }
@@ -159,6 +160,6 @@ pub fn ingest_github(
         ));
     }
 
-    ingest_local(&dest, max_file_size, max_files)
+    ingest_local(&dest, max_file_size, max_files, exclude_dirs)
         .map_err(|e| format!("Failed to ingest cloned repo: {}", e))
 }

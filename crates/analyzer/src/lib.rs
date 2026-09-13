@@ -68,8 +68,10 @@ impl Analyzer {
             .await;
 
         progress("Detecting architecture...");
+        let module_summary = build_module_summary(&index);
+        let arch_hash = content_hash(&(tree_hash.clone() + &module_summary));
         let architecture = self
-            .generate_architecture(project, &key_files_text, &tree_hash)
+            .generate_architecture(project, &key_files_text, &module_summary, &arch_hash)
             .await;
 
         progress("Creating reading guide...");
@@ -193,6 +195,7 @@ impl Analyzer {
         &mut self,
         project: &ProjectContext,
         key_files: &str,
+        module_summary: &str,
         tree_hash: &str,
     ) -> ArchitectureDiagram {
         let cache_key = format!("{}:arch:{}", self.key_prefix, tree_hash);
@@ -206,7 +209,7 @@ impl Analyzer {
         }
 
         let messages =
-            build_architecture_prompt(&project.file_tree, key_files, &self.language);
+            build_architecture_prompt(&project.file_tree, key_files, module_summary, &self.language);
         let raw = self.llm.complete(&messages, 0.3, 4096).await.unwrap_or_default();
         let arch = match extract_json(&raw) {
             Some(data) => serde_json::from_value(data).unwrap_or_default(),
@@ -323,6 +326,42 @@ fn build_key_files_context(project: &ProjectContext) -> String {
         })
         .collect();
     parts.join("\n\n")
+}
+
+fn build_module_summary(index: &ProjectIndex) -> String {
+    if index.modules.is_empty() {
+        return String::new();
+    }
+    let mut parts = Vec::new();
+    for m in &index.modules {
+        let top_symbols: Vec<String> = m
+            .files
+            .iter()
+            .flat_map(|f| f.symbols.iter())
+            .take(5)
+            .map(|s| s.name.clone())
+            .collect();
+        let syms = if top_symbols.is_empty() {
+            String::new()
+        } else {
+            format!(" — {}", top_symbols.join(", "))
+        };
+        let file_paths: Vec<String> = m.files.iter().map(|f| f.path.clone()).collect();
+        let files_str = if file_paths.is_empty() {
+            String::new()
+        } else {
+            format!("\n  Files: {}", file_paths.join(", "))
+        };
+        parts.push(format!(
+            "- {} ({} files, {} symbols){}{}",
+            m.name,
+            m.files.len(),
+            m.total_symbols,
+            syms,
+            files_str
+        ));
+    }
+    parts.join("\n")
 }
 
 async fn analyze_one_module(

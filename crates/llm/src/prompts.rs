@@ -140,6 +140,7 @@ pub fn build_module_prompt_from_index(
 pub fn build_architecture_prompt(
     file_tree: &str,
     key_files: &str,
+    module_summary: &str,
     language: &str,
 ) -> Vec<ChatMessage> {
     vec![
@@ -149,6 +150,7 @@ pub fn build_architecture_prompt(
                 "You are a software architect analyzing a codebase. \
                  Identify the architecture pattern and generate Mermaid diagrams. \
                  Mermaid syntax must be valid. Use simple node names (no special chars). \
+                 Include ALL modules/components listed below in your component diagram. \
                  {}",
                 lang_instruction(language)
             ),
@@ -157,6 +159,7 @@ pub fn build_architecture_prompt(
             role: "user".into(),
             content: format!(
                 "## File Tree\n```\n{file_tree}\n```\n\n\
+                 ## Modules\n{module_summary}\n\n\
                  ## Key Files\n{key_files}\n\n\
                  Analyze the architecture. Output JSON:\n\
                  {{\n\
@@ -167,7 +170,8 @@ pub fn build_architecture_prompt(
                  \x20 \"mermaid_sequence\": \"sequenceDiagram\\n  participant A\\n  A->>B: request\\n  ...\",\n\
                  \x20 \"data_flow\": \"describe the main data flow in 2-3 sentences\"\n\
                  }}\n\n\
-                 IMPORTANT: Mermaid code must be a single string with \\n for newlines. \
+                 IMPORTANT: The components array MUST include every module listed above. \
+                 Mermaid code must be a single string with \\n for newlines. \
                  Use simple alphanumeric node IDs. \
                  {}",
                 json_instruction()

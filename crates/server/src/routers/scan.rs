@@ -154,10 +154,10 @@ async fn run_scan_inner(
     }
 
     let project = if let Some(ref url) = req.url {
-        ingest_github(url, cfg.max_file_size, cfg.max_files, false)
+        ingest_github(url, cfg.max_file_size, cfg.max_files, false, &[])
             .map_err(|e| e.to_string())?
     } else if let Some(ref path) = req.path {
-        ingest_local(path, cfg.max_file_size, cfg.max_files)
+        ingest_local(path, cfg.max_file_size, cfg.max_files, &[])
             .map_err(|e| e.to_string())?
     } else {
         return Err("Either path or url must be provided".to_string());

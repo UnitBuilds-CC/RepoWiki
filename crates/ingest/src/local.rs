@@ -52,6 +52,7 @@ pub fn ingest_local(
     path: impl AsRef<Path>,
     max_file_size: u64,
     max_files: u32,
+    exclude_dirs: &[String],
 ) -> std::io::Result<ProjectContext> {
     let root = path.as_ref().canonicalize()?;
     if !root.is_dir() {
@@ -62,7 +63,7 @@ pub fn ingest_local(
     }
 
     let mut report = ScanReport::default();
-    let files = scan_directory(&root, max_file_size, max_files, 2, Some(&mut report))?;
+    let files = scan_directory(&root, max_file_size, max_files, 2, Some(&mut report), exclude_dirs)?;
     let name = guess_project_name(&root, &files);
     let tree = build_file_tree(&files, 2);
 
