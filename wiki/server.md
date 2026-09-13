@@ -1,68 +1,75 @@
 # server
 
-> Provides an HTTP API layer for initiating codebase scans, streaming progress, querying documentation via chat, and retrieving generated wiki content.
+> Exposes an HTTP API to orchestrate codebase scanning, LLM-powered documentation generation, and interactive wiki retrieval.
 
-The server module exposes a RESTful and SSE-based web interface that orchestrates the documentation generation pipeline. It manages global and per-project state, handles ingestion requests for local directories or GitHub repositories, streams real-time progress via Server-Sent Events, and serves the resulting wiki structure, pages, and dependency graphs. It also integrates with an LLM client and RAG system to power contextual chat queries against the indexed codebase, reducing token costs by leveraging pre-built structured indexes instead of raw context injection.
+The server module serves as the web-facing control plane for the Repowiki system. It manages concurrent project states, coordinates background scanning workflows, streams real-time progress via Server-Sent Events, and serves the generated documentation and dependency graphs. It decouples heavy computational work (ingestion, analysis, RAG indexing) into dedicated workspace crates while providing a standardized REST/SSE interface for both CLI tools and frontend applications.
 
 ## Files
 
 ### `crates/server/Cargo.toml`
 
-Package manifest defining dependencies for the web server crate, including Axum, Tokio, and internal workspace crates.
+Defines crate metadata and declares dependencies for Axum, Tokio, Serde, and internal workspace crates required for HTTP serving and async execution.
 
 ### `crates/server/src/lib.rs`
 
-Core module initialization. Defines AppState and ProjectState structs to manage concurrency-safe registries. Exposes create_app to assemble the Axum router with CORS middleware.
+Application entry point that initializes shared state and configures the Axum router with CORS middleware and route mounting.
 
-- `AppState` (struct) - Global application state holding the cache and a mutex-protected map of active projects.
-- `ProjectState` (struct) - Per-project runtime context storing metadata, wiki instance, RAG index, and progress tracking.
-- `create_app` (function) - Constructs and returns the root Axum Router, wiring routes and injecting AppState.
+- `AppState` (struct) - Global concurrency-safe container holding the document cache and a HashMap of active ProjectState instances.
+- `ProjectState` (struct) - Per-project runtime context tracking metadata, generated wiki, RAG index, and scan progress.
+- `create_app` (function) - Assembles the top-level HTTP router, applies CORS, mounts sub-routers, and injects AppState.
 
 ### `crates/server/src/models.rs`
 
-Defines DTOs for API payloads. Standardizes serialization for scan requests, chat interactions, and project status responses.
+Defines HTTP request/response payloads and DTOs for API communication, enabling serialization between clients and handlers.
 
-- `ScanRequest` (struct) - Schema for triggering a new documentation scan with path, URL, language, and model configuration.
-- `ProjectInfo` (struct) - Response payload reporting scan status, file counts, line counts, and errors.
-- `ChatRequest` (struct) - Schema for chat queries containing the question and conversation history.
+- `ScanRequest` (struct) - Parameters for initiating a documentation scan including path, URL, language, model selection, and API keys.
+- `ProjectInfo` (struct) - Status and metadata returned after scanning completes, including file counts and error states.
+- `ChatRequest` (struct) - Payload for conversational AI queries containing the question and conversation history.
+- `FileReference` (struct) - Structured representation of code snippets linked to documentation, including line ranges and raw text.
 
 ### `crates/server/src/routers/mod.rs`
 
-Module declaration bundling scan, chat, and wiki route definitions under a single namespace.
-
-### `crates/server/src/routers/scan.rs`
-
-Endpoint handlers for repository scanning. Triggers ingestion pipelines, initializes dependency graphs, and streams scan progress/status updates via SSE.
-
-- `start_scan` (function) - POST endpoint that validates input, generates a project ID, and spawns a background task to run the scan.
-- `stream_status` (function) - GET endpoint that establishes an SSE connection to stream real-time scan progress to the client.
-- `run_scan` (function) - Background executor that coordinates ingestion, graph building, and wiki generation, updating AppState upon completion.
+Declares routing submodules for Axum, organizing endpoint logic into separate files.
 
 ### `crates/server/src/routers/chat.rs`
 
-Chat endpoint handler. Processes user questions, retrieves relevant code snippets from the RAG index, constructs optimized prompts, and streams LLM responses via SSE.
+Implements AI-assisted querying endpoints with streaming support for interactive documentation exploration.
 
-- `chat` (function) - POST endpoint that queries the RAG index, builds a prompt using repowiki_llm, and streams the LLM's token-by-token response.
+- `routes` (function) - Mounts the chat handler under the /chat route prefix.
+- `chat` (function) - Processes user questions by retrieving relevant context from the RAG index, constructing prompts, and streaming LLM responses via SSE.
+
+### `crates/server/src/routers/scan.rs`
+
+Orchestrates codebase ingestion and documentation generation through asynchronous background workflows.
+
+- `routes` (function) - Mounts scan management endpoints for starting, querying, and monitoring projects.
+- `start_scan` (function) - Triggers asynchronous background processing for a new or existing project based on ScanRequest parameters.
+- `stream_status` (function) - Returns real-time scan progress updates via SSE to avoid client polling.
+- `run_scan` (function) - Core workflow engine that resolves configuration, spawns background tasks, and manages lifecycle hooks.
+- `run_scan_inner` (function) - Executes the sequential pipeline: code ingestion, dependency graph construction, LLM analysis, and wiki persistence.
 
 ### `crates/server/src/routers/wiki.rs`
 
-Documentation retrieval handlers. Serves the generated wiki sidebar, individual markdown pages, source file snippets, and the project dependency graph as JSON.
+Serves generated documentation assets, navigation structures, and dependency visualizations to clients.
 
-- `get_wiki` (function) - GET endpoint returning the top-level wiki structure and sidebar items.
-- `get_page` (function) - GET endpoint fetching rendered markdown content for a specific wiki page.
-- `get_graph` (function) - GET endpoint returning the serialized dependency graph for visualization.
+- `routes` (function) - Mounts wiki reading endpoints under the /wiki route prefix.
+- `get_wiki` (function) - Retrieves the high-level wiki structure and table of contents.
+- `get_page` (function) - Fetches a specific documentation page by identifier.
+- `get_file` (function) - Returns raw source file references or snippets linked to documentation entries.
+- `get_graph` (function) - Fetches the serialized dependency graph for frontend visualization.
+- `serialize_sidebar` (function) - Converts internal wiki navigation nodes into JSON-compatible structures for UI rendering.
 
 ## Key Concepts
 
-- **Concurrent State Management**: AppState uses Arc<Mutex<HashMap>> to safely handle multiple simultaneous projects and scans without blocking the HTTP server, enabling scalable multi-tenant operation.
-- **Server-Sent Events (SSE)**: Used for both scan progress and chat responses to provide real-time, unidirectional streaming feedback to clients without requiring WebSocket overhead or polling.
-- **Structured RAG Indexing**: The chat router leverages pre-indexed code dependencies and snippets rather than injecting full codebases into LLM context windows, directly addressing the project's goal of cutting LLM costs.
-- **Route Domain Separation**: Scanning, chat, and wiki retrieval are isolated into distinct router modules to maintain clear boundaries of responsibility while sharing a unified AppState for cross-cutting concerns.
+- **AppState & ProjectState**: Centralized concurrency-safe containers that isolate per-project runtime data, enabling parallel scan operations without race conditions.
+- **Server-Sent Events (SSE)**: Streaming protocol used to push real-time progress from long-running scans and token-by-token LLM responses to clients without requiring polling.
+- **RAG Index Integration**: The chat router dynamically loads or rebuilds vector indexes from scanned codebases to ground LLM answers in actual repository context rather than generic training data.
+- **Async Workflow Orchestration**: Scanning is offloaded to background tasks; the API remains responsive while ingestion, graph construction, and LLM prompting execute sequentially in isolated scopes.
 
 ## Internal Relationships
 
-- `crates/server/src/lib.rs` → `crates/server/src/models.rs`: lib.rs imports model structs to type-check and deserialize API payloads within route handlers.
-- `crates/server/src/routers/scan.rs` → `crates/server/src/lib.rs`: Scan routes read/write AppState and ProjectState to track ongoing scans, store RAG indices, and persist generated wiki data.
-- `crates/server/src/routers/chat.rs` → `crates/server/src/lib.rs`: Chat routes depend on AppState to access the SimpleRAG index and ProjectState to validate that a project has been successfully scanned before querying.
-- `crates/server/src/routers/scan.rs` → `crates/server/src/routers/wiki.rs`: Scan completion populates the wiki and dependency graph data structures that wiki routes subsequently serve to clients.
-- `crates/server/src/routers/chat.rs` → `crates/server/src/routers/scan.rs`: Both routers share the same AppState lifecycle; chat is only functional after scan.rs has finished indexing the codebase.
+- `lib.rs` → `routers/*.rs`: lib.rs aggregates all router modules into a single Axum Router and shares AppState across them via Arc.
+- `routers/scan.rs` → `lib.rs`: Scan handlers read and mutate ProjectState instances stored in AppState to track ongoing analyses and progress.
+- `routers/chat.rs` → `routers/scan.rs`: Chat queries depend on successfully completed scans to populate the RAG index and wiki data before answering.
+- `models.rs` → `routers/*.rs`: All routers deserialize incoming JSON into models.rs structs and serialize responses back out using Serde.
+- `routers/wiki.rs` → `routers/scan.rs`: Wiki endpoints serve data that was previously computed, analyzed, and persisted by the scan workflow.

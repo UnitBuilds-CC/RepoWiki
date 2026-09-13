@@ -1,139 +1,132 @@
 # frontend
 
-> Web interface for initiating codebase scans, viewing generated documentation, and interacting with an AI chat assistant.
+> Provides the interactive web interface for initiating codebase scans, viewing generated wiki documentation, and querying the LLM assistant.
 
-A React-based single-page application that serves as the user-facing layer for the wiki documentation generator. It manages the full lifecycle of codebase indexing, displays the resulting hierarchical documentation with safe markdown rendering and diagram support, and provides a real-time chat interface for querying indexed knowledge. The module centralizes network communication, maintains global application state, and optimizes client-side rendering to handle large documentation sets without overwhelming the browser or LLM token limits.
+The frontend is a React + Vite application that serves as the user-facing layer for the documentation generator. It handles project initialization, streams real-time scan progress, renders structured wiki content with syntax highlighting and diagram support, and provides an AI chat interface. State management is centralized via Zustand, while all backend communication is abstracted through a dedicated API module supporting both REST and streaming endpoints.
 
 ## Files
 
 ### `frontend/package.json`
 
-Dependency manifest declaring runtime and build requirements for Vite, React, Tailwind, Mermaid, Zustand, and related tooling.
+Declares dependencies and build scripts for the Vite/React/TypeScript stack.
 
 ### `frontend/tsconfig.json`
 
-TypeScript compiler configuration enforcing strict typing, module resolution, and JSX transformation rules.
+Configures TypeScript compilation targets, strictness, and path resolution.
 
 ### `frontend/vite.config.ts`
 
-Build pipeline configuration enabling React Fast Refresh, Tailwind CSS processing, and optimized production bundling.
+Sets up Vite bundling with React Fast Refresh and Tailwind CSS processing.
 
 ### `frontend/src/App.tsx`
 
-Root router component mapping URL paths to Home, WikiView, and ChatView pages to enable client-side navigation.
+Configures client-side routing to dispatch users to the home, wiki, or chat views.
 
 ### `frontend/index.html`
 
-Static entry point that injects the compiled JavaScript bundle and sets up the DOM root.
+Static entry point that mounts the React root container.
 
 ### `frontend/package-lock.json`
 
-Deterministic dependency tree snapshot ensuring reproducible builds across environments.
-
-### `frontend/src/components/MermaidDiagram.tsx`
-
-Isolated renderer for Mermaid.js flowcharts and diagrams extracted from wiki markdown to prevent blocking the main thread.
-
-- `Props` (interface) - Defines expected props for diagram rendering including content and container dimensions.
-
-### `frontend/src/components/SettingsModal.tsx`
-
-Overlay UI for adjusting scan parameters, repository URLs, and backend connection settings.
-
-- `Props` (interface) - Controls modal visibility and callback handlers for saving configuration changes.
-
-### `frontend/src/components/WikiContent.tsx`
-
-Primary documentation renderer that parses raw markdown, isolates Mermaid blocks, sanitizes HTML, and formats text for safe display.
-
-- `Props` (interface) - Passes markdown string and styling options to the content renderer.
-- `ContentPart` (interface) - Discriminated union type distinguishing between standard markdown text and Mermaid diagram blocks.
-- `splitMermaid` (function) - Parses input markdown string and separates standard text from fenced Mermaid code blocks.
-- `markdownToHtml` (function) - Converts standard markdown segments into sanitized HTML for rendering.
-- `escapeHtml` (function) - Strips dangerous characters from markdown content to prevent XSS attacks.
-
-### `frontend/src/components/WikiSidebar.tsx`
-
-Navigable tree component displaying the generated wiki file hierarchy and handling page selection clicks.
-
-- `Props` (interface) - Provides tree data structure, active page ID, and selection callback handler.
-
-### `frontend/src/index.css`
-
-Global stylesheet importing Tailwind directives and applying base reset styles.
-
-### `frontend/src/lib/api.ts`
-
-Centralized HTTP client defining request/response schemas and implementing async functions for scanning, progress tracking, wiki retrieval, and chat streaming.
-
-- `getHeaders` (function) - Attaches authentication tokens and content-type headers to outgoing requests.
-- `ScanRequest` (interface) - Schema for initiating a new codebase indexing job.
-- `ProjectInfo` (interface) - Metadata returned after successful project scan completion.
-- `WikiStructure` (interface) - Hierarchical representation of the generated documentation tree.
-- `SidebarItem` (interface) - Individual node definition for sidebar navigation components.
-- `PageMeta` (interface) - Lightweight metadata for wiki pages used in navigation and previews.
-- `WikiPage` (interface) - Full document payload containing markdown content and associated metadata.
-- `scanProject` (function) - Triggers the backend indexing pipeline and returns the resulting project identifier.
-- `streamScanProgress` (function) - Establishes a streaming connection to monitor real-time indexing status and logs.
-- `getWiki` (function) - Fetches the complete documentation tree structure for a given project.
-- `getPage` (function) - Retrieves the full markdown content for a specific wiki page by ID.
-- `getFileContent` (function) - Downloads raw source file content referenced within the documentation.
-- `ChatTurn` (interface) - Schema representing a single message exchange in the AI chat session.
-- `streamChat` (function) - Sends user queries to the LLM and yields incremental response chunks via stream.
+Locks dependency versions for reproducible builds.
 
 ### `frontend/src/main.tsx`
 
-Application bootstrap script initializing the React root and mounting the App component to the DOM.
-
-### `frontend/src/pages/ChatView.tsx`
-
-Interactive chat interface handling message composition, API streaming integration, and state synchronization.
-
-- `handleSend` (function) - Processes user input, appends it to the store, triggers the streaming API call, and manages loading states.
+Bootstraps the React application and attaches it to the DOM.
 
 ### `frontend/src/pages/Home.tsx`
 
-Dashboard page for triggering new scans, monitoring progress, and managing project settings via modal integration.
+Landing view for triggering repository scans. Manages scan initiation and settings modal visibility.
 
-- `handleScan` (function) - Validates form inputs, calls the scan API, updates global store with progress, and redirects upon completion.
+- `handleScan` (function) - Initiates the backend codebase scan process and updates progress state.
 
 ### `frontend/src/pages/WikiView.tsx`
 
-Documentation viewer page orchestrating sidebar navigation and content rendering based on selected page IDs.
+Main documentation viewer. Orchestrates sidebar navigation and content rendering based on selected pages.
+
+### `frontend/src/pages/ChatView.tsx`
+
+AI interaction panel. Streams LLM responses and maintains conversation context.
+
+- `handleSend` (function) - Processes user input and triggers the streaming chat endpoint.
+
+### `frontend/src/components/MermaidDiagram.tsx`
+
+Wraps Mermaid.js to render flowcharts and architecture diagrams embedded in wiki markdown.
+
+- `Props` (interface) - Defines expected attributes for the diagram wrapper component.
+
+### `frontend/src/components/SettingsModal.tsx`
+
+Overlay UI for configuring generation parameters. Syncs settings to the global store.
+
+- `Props` (interface) - Defines configuration options and toggle state passed to the modal.
+
+### `frontend/src/components/WikiContent.tsx`
+
+Core renderer for wiki pages. Parses markdown, isolates Mermaid blocks, and safely converts text to HTML.
+
+- `Props` (interface) - Defines content and styling attributes for the renderer.
+- `ContentPart` (interface) - Represents a parsed segment of markdown, distinguishing between text and diagram blocks.
+- `splitMermaid` (function) - Extracts Mermaid code blocks from raw markdown strings.
+- `markdownToHtml` (function) - Converts processed markdown segments into sanitized HTML.
+- `escapeHtml` (function) - Sanitizes plain text to prevent XSS when rendering untrusted wiki content.
+
+### `frontend/src/components/WikiSidebar.tsx`
+
+Left-panel navigation component displaying the generated wiki tree structure.
+
+- `Props` (interface) - Defines navigation item attributes and selection handlers.
+
+### `frontend/src/index.css`
+
+Global stylesheet applying Tailwind utilities and base resets.
+
+### `frontend/src/lib/api.ts`
+
+Abstraction layer for backend communication. Defines request/response types and implements fetch/WebSocket calls.
+
+- `getHeaders` (function) - Constructs authentication and content-type headers for API requests.
+- `scanProject` (function) - Triggers the initial codebase analysis job on the backend.
+- `streamScanProgress` (function) - Establishes a WebSocket connection to receive real-time scan logs.
+- `getWiki` (function) - Fetches the complete wiki structure and metadata for a project.
+- `getPage` (function) - Retrieves the raw markdown content for a specific wiki page.
+- `getFileContent` (function) - Fetches raw source file contents linked from the wiki.
+- `streamChat` (function) - Sends user queries to the LLM and streams incremental responses.
 
 ### `frontend/src/stores/wiki.ts`
 
-Zustand-based global state store managing chat history, wiki metadata, loading flags, and active selections without prop drilling.
+Zustand-based global state manager. Tracks scan progress, wiki metadata, chat history, and UI toggles.
 
-- `ChatReference` (interface) - Tracks context snippets or source links attached to AI chat responses.
-- `ChatMessage` (interface) - Represents a complete chat turn including role, content, and optional references.
-- `WikiStore` (interface) - Defines the shape of the global state slice including selectors, setters, and initialization logic.
+- `ChatReference` (interface) - Defines metadata linking a chat message to a specific wiki page or code artifact.
+- `ChatMessage` (interface) - Represents a single turn in the AI conversation history.
+- `WikiStore` (interface) - Defines the shape of the global Zustand store including scan status, wiki data, and chat state.
 
 ### `frontend/src/vite-env.d.ts`
 
-Type declarations providing IDE autocompletion for Vite-specific environment variables and static asset imports.
+Type declarations for Vite-specific environment variables and asset imports.
 
 ## Key Concepts
 
-- **Zustand Global State**: Eliminates prop drilling by centralizing chat history, wiki metadata, and UI flags in a lightweight store, enabling instant cross-component synchronization.
-- **Streaming API Integration**: Handles long-running operations like scan progress and LLM responses via fetch streams, providing real-time feedback without blocking the UI thread.
-- **Client-Side Markdown & Diagram Parsing**: Safely processes raw markdown on the frontend, isolating Mermaid blocks to prevent XSS and rendering heavy visualizations asynchronously to maintain performance.
-- **SPA Routing Architecture**: Uses react-router-dom to manage client-side navigation between dashboard, documentation viewer, and chat interfaces, preserving application state and avoiding full page reloads.
+- **Streaming Communication**: Uses WebSocket/SSE for real-time scan progress and chat responses to prevent UI blocking and provide immediate feedback.
+- **Centralized State Management**: Zustand handles cross-cutting concerns like scan status, wiki metadata, and chat history without prop drilling across the component tree.
+- **Markdown-to-HTML Pipeline**: Custom parsing isolates Mermaid syntax before conversion to ensure safe rendering, proper diagram integration, and XSS prevention.
+- **Component Orchestration**: Pages act as containers delegating rendering to specialized components (Sidebar, Content, Diagram) driven by shared state and routed URLs.
 
 ## Internal Relationships
 
-- `frontend/src/App.tsx` → `frontend/src/pages/Home.tsx`: Registers the Home page route for initial landing and scan initiation.
-- `frontend/src/App.tsx` → `frontend/src/pages/WikiView.tsx`: Registers the WikiView route for documentation browsing.
-- `frontend/src/App.tsx` → `frontend/src/pages/ChatView.tsx`: Registers the ChatView route for AI-assisted querying.
-- `frontend/src/components/SettingsModal.tsx` → `frontend/src/stores/wiki.ts`: Reads and writes configuration state to persist user preferences across sessions.
-- `frontend/src/components/WikiContent.tsx` → `frontend/src/components/MermaidDiagram.tsx`: Delegates extracted diagram blocks to the isolated renderer for safe, non-blocking visualization.
-- `frontend/src/main.tsx` → `frontend/src/App.tsx`: Mounts the React application tree to the DOM element defined in index.html.
-- `frontend/src/pages/ChatView.tsx` → `frontend/src/lib/api.ts`: Invokes streaming endpoints to send queries and receive incremental LLM responses.
-- `frontend/src/pages/ChatView.tsx` → `frontend/src/stores/wiki.ts`: Dispatches actions to update chat history, loading states, and reference metadata.
-- `frontend/src/pages/Home.tsx` → `frontend/src/lib/api.ts`: Calls scan initiation and progress streaming endpoints to drive the indexing workflow.
-- `frontend/src/pages/Home.tsx` → `frontend/src/stores/wiki.ts`: Updates global state with project metadata, scan progress, and completion flags.
-- `frontend/src/pages/Home.tsx` → `frontend/src/components/SettingsModal.tsx`: Opens and controls the settings overlay to adjust scan parameters before execution.
-- `frontend/src/pages/WikiView.tsx` → `frontend/src/lib/api.ts`: Fetches wiki structure and individual page content based on user navigation.
-- `frontend/src/pages/WikiView.tsx` → `frontend/src/stores/wiki.ts`: Syncs selected page ID and loading states with the global store for cross-component consistency.
-- `frontend/src/pages/WikiView.tsx` → `frontend/src/components/WikiSidebar.tsx`: Passes tree data and selection callbacks to render the navigation panel.
-- `frontend/src/pages/WikiView.tsx` → `frontend/src/components/WikiContent.tsx`: Injects fetched markdown content into the renderer for display.
+- `frontend/src/App.tsx` → `frontend/src/pages/Home.tsx`: Routing configuration maps the root path to the landing view.
+- `frontend/src/App.tsx` → `frontend/src/pages/WikiView.tsx`: Routing configuration maps the wiki path to the documentation viewer.
+- `frontend/src/App.tsx` → `frontend/src/pages/ChatView.tsx`: Routing configuration maps the chat path to the AI assistant view.
+- `frontend/src/components/SettingsModal.tsx` → `frontend/src/stores/wiki.ts`: Modal updates global configuration state via Zustand actions.
+- `frontend/src/components/WikiContent.tsx` → `frontend/src/components/MermaidDiagram.tsx`: Content parser delegates extracted diagram blocks to this component for rendering.
+- `frontend/src/main.tsx` → `frontend/src/App.tsx`: Entry point mounts the router and application shell into the DOM.
+- `frontend/src/pages/ChatView.tsx` → `frontend/src/lib/api.ts`: Component sends chat payloads to backend and receives streamed responses.
+- `frontend/src/pages/ChatView.tsx` → `frontend/src/stores/wiki.ts`: Component persists message history and references in global state.
+- `frontend/src/pages/Home.tsx` → `frontend/src/lib/api.ts`: Component initiates scan jobs and subscribes to progress streams.
+- `frontend/src/pages/Home.tsx` → `frontend/src/stores/wiki.ts`: Component tracks scan completion status and project metadata.
+- `frontend/src/pages/Home.tsx` → `frontend/src/components/SettingsModal.tsx`: Component controls modal visibility and passes configuration props.
+- `frontend/src/pages/WikiView.tsx` → `frontend/src/lib/api.ts`: Component fetches wiki structure and page content on mount or navigation.
+- `frontend/src/pages/WikiView.tsx` → `frontend/src/stores/wiki.ts`: Component syncs active page selection and sidebar state.
+- `frontend/src/pages/WikiView.tsx` → `frontend/src/components/WikiSidebar.tsx`: Page passes wiki tree data and selection handlers to the sidebar.
+- `frontend/src/pages/WikiView.tsx` → `frontend/src/components/WikiContent.tsx`: Page passes raw markdown and file paths to the content renderer.

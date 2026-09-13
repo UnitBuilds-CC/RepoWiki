@@ -1,48 +1,49 @@
 # graph
 
-> Analyzes codebase structure to prioritize documentation targets and optimize LLM indexing.
+> Models and analyzes codebase dependency structures to prioritize documentation targets and detect architectural issues.
 
-Constructs a directed dependency graph from a codebase to identify architectural relationships, compute file importance via PageRank, and detect structural patterns like entry points, isolated modules, and circular dependencies. The module parses language-specific import statements, normalizes paths, and provides analytical queries and Mermaid visualization output. It serves as the structural foundation for the documentation generator, enabling it to focus LLM context windows on high-value files first while avoiding redundant or peripheral code.
+This module constructs a directed graph representing import/dependency relationships across an entire codebase. It ingests raw project metadata, resolves language-specific imports using regex patterns, and normalizes paths to create a unified DependencyGraph. The module provides analytical methods including PageRank-based file importance scoring, Tarjan's strongly connected components for cycle detection, entry point identification, and isolated file detection. It also exports the graph structure to Mermaid.js syntax for visual embedding in generated wikis. By abstracting cross-language import resolution into a single graph abstraction, it enables downstream LLM documentation pipelines to intelligently prioritize core modules, warn about circular dependencies, and map module boundaries accurately.
 
 ## Files
 
 ### `crates/graph/Cargo.toml`
 
-Declares runtime dependencies required for graph algorithms, regex parsing, and core model integration.
+Defines crate metadata and declares external dependencies required for graph operations, pattern matching, and core model integration.
 
 ### `crates/graph/src/lib.rs`
 
-Implements the dependency graph builder, analyzers, and exporters.
+Core implementation of the DependencyGraph struct and all analysis/export methods. Handles project ingestion, import resolution, graph traversal, ranking, and Mermaid generation.
 
-- `DependencyGraph` (struct) - Wraps a petgraph DiGraph to represent files as nodes and imports as directed edges.
-- `build_from_project` (method) - Parses ProjectContext to extract imports using language-specific regex patterns and constructs the dependency graph.
-- `rank_files` (method) - Computes PageRank scores for all nodes to quantify file importance and connectivity.
-- `get_core_files` (method) - Returns the top N highest-ranked files based on PageRank scores.
-- `get_module_dependencies` (method) - Aggregates dependencies by logical module rather than individual files.
-- `to_mermaid` (method) - Serializes the graph into Mermaid.js flowchart syntax for visual inspection.
-- `get_entry_points` (method) - Identifies nodes with zero incoming edges, representing public APIs or binaries.
-- `find_isolated_files` (method) - Locates nodes with no incoming or outgoing edges, indicating orphaned or standalone code.
-- `find_circular_dependencies` (method) - Uses Tarjan's strongly connected components algorithm to detect and return cycles up to a specified limit.
-- `nodes` (method) - Extracts all node identifiers from the graph.
-- `edges` (method) - Extracts all directed edge pairs from the graph.
-- `pagerank_power_iteration` (function) - Implements the iterative PageRank algorithm to converge on stable importance scores.
-- `import_patterns` (function) - Returns language-specific regex patterns for extracting import statements.
-- `resolve_import` (function) - Matches an import statement against known patterns and resolves it to a target file path.
-- `resolve_python_module` (function) - Specialized resolver for Python import paths, handling relative imports and module-to-file mapping.
-- `normalize_path` (function) - Sanitizes and standardizes file paths to ensure consistent node identification.
-- `get_module` (function) - Derives a logical module name from a file path.
-- `mermaid_id` (function) - Escapes and formats file names into valid Mermaid node identifiers.
+- `DependencyGraph` (struct) - Holds the underlying petgraph DiGraph and exposes public APIs for graph analysis, ranking, and visualization export.
+- `build_from_project` (method) - Parses all files in the ProjectContext, extracts imports using language-specific regex patterns, resolves paths, and populates the directed dependency graph.
+- `rank_files` (method) - Computes and returns a sorted list of files with their PageRank scores to quantify module importance and centrality.
+- `get_core_files` (method) - Filters the ranked files and returns the top N most important modules based on PageRank thresholds.
+- `get_module_dependencies` (method) - Maps each module name to a set of its direct downstream dependencies for quick lookup during documentation generation.
+- `to_mermaid` (method) - Transforms internal graph nodes and edges into Mermaid.js flowchart syntax for static wiki visualization.
+- `get_entry_points` (method) - Returns files with zero incoming edges, identifying root modules or application entrypoints.
+- `find_isolated_files` (method) - Identifies files with no incoming or outgoing dependency edges, flagging them as potentially undocumented or standalone.
+- `find_circular_dependencies` (method) - Applies Tarjan's SCC algorithm to detect cyclic import chains, capped at a specified limit to prevent performance degradation.
+- `nodes` (method) - Returns a flat list of all file paths represented as graph nodes.
+- `edges` (method) - Returns a list of tuples representing directed import relationships between source and target files.
+- `pagerank_power_iteration` (function) - Implements the iterative power method algorithm to converge on stable PageRank scores for each node in the graph.
+- `import_patterns` (function) - Returns a vector of compiled Regex patterns tailored to specific programming languages for extracting import statements.
+- `resolve_import` (function) - Resolves matched import tokens against the project filesystem to produce normalized, absolute file paths.
+- `resolve_python_module` (function) - Specialized resolver for Python import syntax, handling relative dots, __init__.py mappings, and package prefixes.
+- `normalize_path` (function) - Standardizes file paths by stripping prefixes, resolving symlinks, and ensuring consistent casing for reliable graph node indexing.
+- `mermaid_id` (function) - Sanitizes file or module names to produce valid, URL-safe identifiers required by Mermaid.js node definitions.
+- `get_module` (function) - Extracts the logical module name from a file path by stripping extensions and directory separators.
 
 ## Key Concepts
 
-- **PageRank Prioritization**: Scores files by connectivity to determine which modules are most critical for documentation, reducing unnecessary LLM calls on peripheral code.
-- **Directed Dependency Modeling**: Represents imports as directed edges to accurately capture code flow and architectural boundaries.
-- **Language-Agnostic Import Resolution**: Uses extensible regex patterns and specialized resolvers to map import strings to physical files regardless of language.
-- **Structural Analysis Queries**: Provides targeted graph operations to surface architectural health and inform documentation strategy.
+- **Directed Dependency Graph**: Abstracts cross-language import relationships into a unified DiGraph, enabling consistent traversal and analysis regardless of source language.
+- **PageRank File Ranking**: Uses iterative power iteration to score files by inbound dependency density, allowing the system to automatically prioritize high-impact modules for documentation.
+- **Language-Specific Import Resolution**: Employs regex patterns tailored to each language to accurately map import statements to normalized project file paths, bridging syntactic differences into a common graph schema.
+- **Strongly Connected Components (SCC)**: Detects circular dependencies that indicate tight coupling or architectural anti-patterns, preventing infinite loops during recursive documentation generation.
+- **Mermaid Visualization Export**: Converts internal graph topology into standard Mermaid syntax, enabling static wiki rendering without requiring client-side JavaScript execution.
 
 ## Internal Relationships
 
-- `crates/graph/src/lib.rs` → `repowiki_core::models::ProjectContext`: Consumes ProjectContext to access file lists and metadata during graph construction.
-- `crates/graph/src/lib.rs` → `petgraph`: Relies on petgraph for DiGraph storage, EdgeRef iteration, and Tarjan SCC cycle detection.
-- `crates/graph/src/lib.rs` → `regex`: Uses compiled regex patterns to parse language-specific import syntax across different codebases.
-- `crates/graph/src/lib.rs` → `upstream documentation pipeline`: Exports ranked files, core modules, and Mermaid diagrams to guide LLM context allocation and wiki generation.
+- `crates/graph/src/lib.rs` → `repowiki_core::models::ProjectContext`: Consumes structured project metadata to seed the dependency graph with file paths and language hints.
+- `crates/graph/src/lib.rs` → `petgraph`: Leverages DiGraph for efficient node/edge storage and tarjan_scc for strongly connected component detection.
+- `crates/graph/src/lib.rs` → `regex`: Uses compiled patterns to parse language-specific import syntax during initial graph construction.
+- `graph module` → `documentation_pipeline`: Feeds ranked file lists, dependency maps, and Mermaid diagrams into the LLM documentation generator to prioritize coverage and validate architecture.

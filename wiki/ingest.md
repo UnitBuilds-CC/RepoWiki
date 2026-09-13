@@ -1,52 +1,49 @@
 # ingest
 
-> Acquires and normalizes source code from GitHub repositories and local directories into a standardized format for downstream structured indexing.
+> Acquires and normalizes source code from remote Git repositories or local directories into a unified ProjectContext for downstream analysis.
 
-The ingest module serves as the acquisition layer for the documentation pipeline, responsible for fetching source code and extracting structural metadata before it reaches the LLM. It provides two distinct ingestion strategies: cloning remote GitHub repositories and scanning local filesystem directories. By enforcing strict size limits, handling authentication securely, and returning a unified representation of the codebase, it filters out invalid or oversized inputs early. This pre-processing step is critical for controlling token consumption, ensuring consistent data shapes for the indexer, and preventing resource exhaustion during documentation generation.
+The ingest module abstracts repository acquisition into two parallel strategies: remote cloning and local scanning. It ensures that regardless of the source, the output conforms to a standardized ProjectContext model expected by the core analysis pipeline. Remote ingestion handles Git URL parsing, credential resolution, safe temporary directory management, and size constraints to prevent resource exhaustion. Local ingestion traverses the filesystem, infers project metadata, and delegates structural scanning to the repowiki_scanner crate. By isolating these concerns, the module keeps the core LLM-driven documentation generator agnostic to how the codebase was obtained.
 
 ## Files
 
 ### `crates/ingest/Cargo.toml`
 
-Defines package metadata, versioning, and runtime dependencies for the ingest crate.
-
-### `crates/ingest/src/github.rs`
-
-Manages GitHub-specific repository acquisition, including URL parsing, authentication, safe cloning, size validation, and cleanup.
-
-- `MAX_REPO_SIZE_MB` (constant) - Hard limit on repository size in megabytes to prevent resource exhaustion and control LLM costs.
-- `clone_dir` (function) - Creates an isolated temporary directory for safely cloning repositories without polluting the host filesystem.
-- `git_url_regex` (constant) - Compiled regex pattern used to validate and extract owner, repository, and branch components from Git URLs.
-- `parse_git_url` (function) - Extracts and validates the owner, repository name, and branch/tag from a raw Git URL string.
-- `clone_url` (function) - Constructs the base git clone command string for unauthenticated access.
-- `resolve_token` (function) - Securely retrieves a GitHub personal access token from environment variables for private repository access.
-- `authenticated_clone_url` (function) - Injects resolved credentials into the clone URL to enable secure access to restricted repositories.
-- `remove_dir_all` (function) - Safely deletes the temporary clone directory and all its contents after processing completes.
-- `dir_size_mb` (function) - Recursively calculates the total size of a cloned directory in megabytes for size validation.
-- `ingest_github` (function) - Main orchestrator that clones, validates size, extracts metadata, and returns a standardized ProjectContext and ScanReport.
+Defines the Rust crate metadata and dependencies for the ingest module.
 
 ### `crates/ingest/src/lib.rs`
 
-Crate root that re-exports public ingestion functions and organizes module visibility.
+Module entry point that aggregates and re-exports the public ingestion interfaces.
+
+### `crates/ingest/src/github.rs`
+
+Manages remote repository acquisition via Git. Handles URL normalization, authentication, safe cloning to temporary storage, size validation, and cleanup.
+
+- `ingest_github` (function) - Orchestrates the full remote ingestion workflow: parses the URL, resolves credentials, clones the repository, validates its size against MAX_REPO_SIZE_MB, and returns a ProjectContext.
+- `parse_git_url` (function) - Extracts organization, repository name, and base URL from a standard GitHub HTTP/SSH string using regex.
+- `authenticated_clone_url` (function) - Constructs a clone-ready URL by injecting resolved authentication tokens when required.
+- `resolve_token` (function) - Retrieves the GitHub access token from environment variables or configuration to enable private repository access.
+- `clone_dir` (function) - Generates a secure, unique temporary directory path for storing cloned repositories.
+- `remove_dir_all` (function) - Safely deletes the temporary clone directory after ingestion completes or fails.
+- `dir_size_mb` (function) - Calculates the total disk footprint of a directory to enforce the MAX_REPO_SIZE_MB constraint.
 
 ### `crates/ingest/src/local.rs`
 
-Handles local filesystem ingestion by scanning directories, building file trees, and extracting standardized metadata.
+Handles local filesystem traversal and metadata extraction, delegating structural analysis to the scanner crate.
 
-- `guess_project_name` (function) - Derives a readable project identifier from the root directory path or contained file names.
-- `ingest_local` (function) - Orchestrates local directory scanning, delegates to repowiki_scanner, and returns a unified ProjectContext and ScanReport.
+- `ingest_local` (function) - Scans a local directory path, constructs a file tree, generates a ScanReport, and returns a normalized ProjectContext.
+- `guess_project_name` (function) - Infers a human-readable project identifier from the root directory name or primary file structure.
 
 ## Key Concepts
 
-- **Parallel Ingestion Paths**: GitHub cloning and local scanning are implemented separately but normalized to identical output types, enabling a single downstream indexing pipeline to handle both seamlessly.
-- **Cost Control via Pre-filtering**: Hard size limits and early validation prevent oversized or malformed repositories from consuming expensive LLM tokens during documentation generation.
-- **Secure Credential Injection**: Authentication tokens are resolved at runtime from environment variables and only injected into clone URLs when necessary, avoiding hardcoded secrets and supporting private repositories.
-- **Temporary Isolation**: Repositories are cloned into ephemeral directories that are explicitly cleaned up after processing, preventing host filesystem pollution and race conditions.
+- **Unified Context Output**: Regardless of source (remote Git or local disk), both ingestion paths converge on a single ProjectContext struct, allowing downstream LLM pipelines to operate without source-specific branching.
+- **Safe Temporary Cloning**: Remote ingestion isolates downloaded repositories in ephemeral directories with strict size limits and guaranteed cleanup, preventing disk exhaustion and credential leakage.
+- **Separation of Acquisition and Analysis**: Ingest only fetches and structures raw code; it delegates deep file scanning and tree building to repowiki_scanner, keeping the module focused on data acquisition and normalization.
 
 ## Internal Relationships
 
-- `crates/ingest/src/lib.rs` → `crates/ingest/src/github.rs`: Re-exports ingest_github to expose it as part of the crate's public API.
-- `crates/ingest/src/lib.rs` → `crates/ingest/src/local.rs`: Re-exports ingest_local to expose it as part of the crate's public API.
-- `crates/ingest/src/github.rs` → `repowiki_core::models`: Returns standardized ProjectContext and ScanReport structs to ensure downstream modules receive a consistent data shape regardless of source.
-- `crates/ingest/src/local.rs` → `repowiki_scanner`: Delegates actual directory traversal, file enumeration, and metadata extraction to the dedicated scanner crate.
-- `crates/ingest/src/github.rs` → `crates/ingest/src/local.rs`: Both implement parallel ingestion paths that converge on identical output structures, allowing the indexer to treat remote and local sources uniformly.
+- `crates/ingest/src/lib.rs` → `crates/ingest/src/github.rs`: lib.rs re-exports ingest_github to expose the remote ingestion capability to consumers.
+- `crates/ingest/src/lib.rs` → `crates/ingest/src/local.rs`: lib.rs re-exports ingest_local to expose the local ingestion capability to consumers.
+- `crates/ingest/src/github.rs` → `crates/ingest/src/local.rs`: github.rs imports ingest_local, likely for shared utility logic or fallback handling during ingestion workflows.
+- `crates/ingest/src/local.rs` → `repowiki_scanner`: local.rs delegates file enumeration and tree construction to repowiki_scanner::build_file_tree and scan_directory to produce the ScanReport.
+- `crates/ingest/src/github.rs` → `repowiki_core::models`: Both github.rs and local.rs return repowiki_core::models::ProjectContext, ensuring type consistency across ingestion sources.
+- `crates/ingest/src/github.rs` → `std::process::Command`: github.rs executes git clone commands externally to fetch remote repositories.

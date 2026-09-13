@@ -1,60 +1,50 @@
 # core
 
-> Provide foundational configuration management and strongly-typed data models for project scanning, static analysis indexing, and structured wiki generation.
+> Central data contract and configuration manager for the documentation pipeline.
 
-The core module serves as the central data and configuration layer. It abstracts runtime settings, resolves LLM provider aliases, and persists user preferences to eliminate hardcoded dependencies. Simultaneously, it defines the complete schema for static analysis outputs and wiki documents. By enforcing strict typing across scan reports, symbol indexes, and architectural diagrams, the module ensures downstream components consume structured data directly. This eliminates unstructured LLM parsing, reduces token consumption, and guarantees consistent documentation output.
+The core module establishes the foundational data structures and runtime configuration required to scan, index, and document arbitrary codebases. It decouples the parsing and LLM generation phases by providing strongly-typed representations of project metadata, file contents, symbol indices, and architectural relationships. Configuration handling abstracts away environment-specific API credentials, model routing, and resource constraints, ensuring consistent behavior across CLI and web interfaces.
 
 ## Files
 
-### `crates/core/Cargo.toml`
-
-Package manifest defining dependencies, primarily serde for data serialization required by config and models.
-
-- `dependencies` (toml_table) - Declares serde and other runtime requirements for the crate.
-
 ### `crates/core/src/config.rs`
 
-Manages application configuration lifecycle, path resolution, and model aliasing.
+Manages persistent application settings, API credentials, model routing, and processing constraints. Provides defaults and deserializes/serializes user preferences to ensure reproducible documentation generation.
 
-- `config_dir` (function) - Computes the standard directory path for storing application configuration.
-- `config_file` (function) - Constructs the full path to the active configuration JSON file.
-- `model_aliases` (function) - Returns a static mapping of shorthand provider names to their full endpoint strings.
-- `resolve_model` (function) - Resolves a user-provided model name against aliases and returns the canonical string.
-- `Config` (struct) - Holds runtime parameters (model, api_key, concurrency, limits) with built-in defaults.
-- `ConfigFile::load` (method) - Deserializes and validates configuration from disk into a Config struct.
-- `ConfigFile::save` (method) - Serializes current configuration state back to disk atomically.
-
-### `crates/core/src/lib.rs`
-
-Crate entry point that establishes the public API boundary by re-exporting core types.
-
-- `mod config` (module_declaration) - Exposes configuration module to external consumers.
-- `mod models` (module_declaration) - Exposes domain data structures for indexing and wiki generation.
+- `Config` (struct) - Runtime settings container holding API keys, base URLs, model selection, concurrency limits, and file processing thresholds.
+- `ConfigFile` (struct) - Disk-persisted format for configuration, containing only essential fields like model, api_key, api_base, and language.
+- `resolve_model` (function) - Maps shorthand alias strings to full provider/model identifiers based on a static lookup table.
+- `load` (method) - Deserializes configuration from disk into a Config instance, applying defaults for missing fields.
+- `save` (method) - Serializes current configuration state back to disk, enabling persistent user preferences.
 
 ### `crates/core/src/models.rs`
 
-Defines all domain data structures for static analysis, indexing, and wiki document generation.
+Defines the complete domain schema for the documentation pipeline. Structures represent raw scan results, indexed code artifacts, architectural mappings, and the final wiki payload. Enables deterministic serialization for LLM prompts and downstream rendering.
 
-- `FileInfo` (struct) - Represents a scanned file's metadata, content preview, and classification flags.
-- `ScanReport` (struct) - Aggregates scan outcomes including kept candidates, oversized/binary drops, and skipped directories.
-- `ProjectContext` (struct) - Holds root-level project metadata, file tree, and coverage statistics.
-- `IndexedFile` (struct) - Stores parsed metrics, symbol lists, import/export graphs, and content hashes for a single file.
-- `IndexedSymbol` (struct) - Captures detailed symbol attributes including visibility, parameters, return types, and call targets.
-- `ProjectIndex` (struct) - Root container for the entire codebase index, linking modules, call graphs, and symbol lookups.
-- `WikiData` (struct) - Top-level schema for the final generated wiki, aggregating overview, modules, architecture, and reading guides.
-- `ArchitectureDiagram` (struct) - Structures component relationships, data flows, and Mermaid diagram definitions.
-- `ReadingGuide` (struct) - Defines sequential learning steps, time estimates, and contextual tips for new developers.
-- `SymbolKind` (enum) - Type-safe categorization of code elements (function, class, variable, etc.).
-- `Visibility` (enum) - Encapsulates access modifiers (public, private, protected) for accurate indexing.
+- `ScanReport` (struct) - Categorizes discovered files by size, type, priority, and filtering status during initial traversal.
+- `ProjectContext` (struct) - Holds repository root, name, and aggregated file tree used to drive LLM context windows.
+- `IndexedFile` (struct) - Parsed representation of a single source file containing metrics, symbols, imports, exports, and content hash.
+- `IndexedSymbol` (struct) - Detailed breakdown of individual code elements including visibility, parameters, return types, decorators, and call targets.
+- `ProjectIndex` (struct) - Aggregated view containing all modules, call graph edges, and global symbol index for cross-file analysis.
+- `ArchitectureDiagram` (struct) - Structured representation of system design including components, sequence flows, and Mermaid diagram definitions.
+- `ReadingGuide` (struct) - Curated step-by-step onboarding plan with time estimates and file references for new developers.
+- `WikiData` (struct) - Final assembled documentation payload composing overview, modules, architecture, and reading guide into a unified output.
+- `Visibility` (enum) - Classifies symbol accessibility (public, private, protected) for accurate documentation scoping.
+- `SymbolKind` (enum) - Identifies code element types (function, class, variable, module, etc.) for proper categorization.
+
+### `crates/core/src/lib.rs`
+
+Module root. Re-exports public types and functions from config and models to establish a clean public API for downstream crates.
 
 ## Key Concepts
 
-- **Structured Indexing**: Raw code is transformed into typed graphs (ProjectIndex, CallEdge, IndexedSymbol) rather than raw text. This allows downstream LLM calls to query precise relationships and metadata, drastically cutting token usage and preventing hallucination.
-- **Constrained Wiki Generation**: Pre-defined schemas (WikiData, ModuleDoc, ArchitectureDiagram) force LLM outputs into exact shapes. This eliminates verbose prose, enforces consistency, and ensures every generated page contains only actionable information.
-- **Configuration Abstraction**: Path resolution and model aliasing decouple provider selection from business logic. Users configure endpoints once, and the system routes requests transparently without conditional branching in core pipelines.
+- **Domain-Driven Data Contracts**: Strongly-typed structs replace ad-hoc dictionaries, ensuring type safety and predictable serialization when passing data between the scanner, LLM orchestrator, and wiki renderer.
+- **Progressive Indexing**: Raw files are first classified (ScanReport), then parsed into rich artifacts (IndexedFile/IndexedSymbol), and finally aggregated (ProjectIndex) to build call graphs and architectural maps before LLM consumption.
+- **Configuration Abstraction**: Separates environment-sensitive settings (API keys, base URLs, model aliases) from business logic, allowing dynamic routing and resource tuning without code changes.
+- **Structured Output Assembly**: WikiData enforces a rigid hierarchy (overview -> modules -> architecture -> reading guide) that guarantees consistent markdown/wiki formatting regardless of source language or project size.
 
 ## Internal Relationships
 
-- `config.rs` → `lib.rs`: lib.rs re-exports Config and resolution functions, making them accessible to CLI and web handlers.
-- `models.rs` → `lib.rs`: lib.rs re-exports all domain structs, establishing the shared contract for indexing pipelines and documentation generators.
-- `config.rs` → `models.rs`: Configuration parameters (max_file_size, concurrency, language) directly dictate filtering thresholds and parsing behavior when populating ScanReport and IndexedFile instances.
+- `config.rs` → `models.rs`: Configuration values (max_file_size, concurrency, language) directly filter and control the population of ScanReport and IndexedFile structures during the scanning phase.
+- `models.rs` → `models.rs`: ProjectIndex aggregates ModuleIndex and CallEdge data, which feeds into ArchitectureDiagram and ReadingGuide generation. WikiData composes ProjectOverview, ModuleDoc, and ReadingGuide into the final output.
+- `lib.rs` → `config.rs`: Acts as a facade, exposing configuration utilities to the rest of the workspace without leaking internal paths.
+- `lib.rs` → `models.rs`: Exports the entire domain schema to downstream crates, enabling uniform type usage across the CLI and web interface.

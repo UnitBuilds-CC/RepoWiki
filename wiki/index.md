@@ -1,66 +1,63 @@
 # index
 
-> Parses source code into structured metadata to provide precise, cost-effective context for LLM-driven documentation.
+> Parses, resolves, and structures source code into a navigable project index for downstream LLM documentation generation.
 
-The module replaces full-codebase dumps with targeted structural indexes. It processes each file through language-specific extractors that capture definitions, parameters, fields, docstrings, and call sites. These extractions are normalized into a unified ProjectIndex, resolved for cross-file dependencies, and grouped into logical modules. A call-flow tracer links symbols to execution paths. Downstream components query this index to inject only relevant code snippets into LLM prompts, minimizing token usage while preserving architectural context. Content hashing prevents redundant parsing of unchanged files.
+The index module transforms raw repository files into a unified, queryable representation. It handles multi-language symbol extraction without relying on heavy AST libraries, resolves cross-file imports, constructs a call graph for dependency tracing, and groups files into logical modules. This structured output provides the foundational context required for accurate, code-aware LLM documentation generation.
 
 ## Files
 
 ### `crates/index/Cargo.toml`
 
-Defines crate entry point and declares dependencies for regex parsing, core model types, and caching infrastructure.
+Declares crate metadata and runtime dependencies including regex parsing utilities and core model definitions.
 
 ### `crates/index/src/extract.rs`
 
-Implements line-based, language-specific parsers for Python, Rust, TypeScript, Go, and Java. Extracts symbols, imports, parameters, struct/class fields, docstrings, and call sites. Computes cyclomatic complexity and file metrics to quantify code density.
+Implements language-specific parsers for Python, Rust, TypeScript, Go, and Java to extract symbols, imports, parameters, docstrings, and structural fields.
 
-- `extract_symbols` (function) - Public dispatcher that routes raw source content to the correct language extractor based on detected syntax.
-- `compute_metrics` (function) - Calculates file-level statistics including cyclomatic complexity and line counts for prioritization.
-- `extract_python` (function) - Parses Python files to collect classes, functions, imports, docstrings, and method calls using indentation-aware scanning.
-- `extract_rust` (function) - Extracts Rust modules, structs, impl blocks, functions, macros, and trait implementations via pattern matching.
-- `extract_typescript` (function) - Captures TS interfaces, classes, methods, enums, and ES module imports using brace/indent tracking.
-- `extract_go` (function) - Scans Go files for packages, structs, methods, interfaces, and import declarations.
-- `extract_java` (function) - Processes Java classes, methods, fields, annotations, and package imports with visibility detection.
+- `extract_symbols` (function) - Dispatches to language-specific extractors based on file extension.
+- `compute_metrics` (function) - Calculates complexity and structural metrics for a given code snippet.
+- `extract_python` (function) - Parses Python source to return indexed symbols and imports.
+- `extract_rust` (function) - Parses Rust source to return indexed symbols and imports.
+- `extract_typescript` (function) - Parses TypeScript source to return indexed symbols and imports.
+- `extract_go` (function) - Parses Go source to return indexed symbols and imports.
+- `extract_java` (function) - Parses Java source to return indexed symbols and imports.
 
 ### `crates/index/src/flow.rs`
 
-Constructs directed call graphs by tracing function and method invocations across extracted symbols. Enables behavioral queries without loading full source files.
+Traces function/method calls between symbols to build a directed call graph representing execution dependencies.
 
-- `trace_flow` (function) - Analyzes extracted call sites to build a graph of execution dependencies between symbols.
-- `build_outgoing` (function) - Generates CallEdge records mapping caller functions to their invoked callees.
+- `trace_flow` (function) - Analyzes extracted symbols to generate CallEdge objects mapping caller-callee relationships.
+- `build_outgoing` (function) - Constructs outgoing call edges for a specific symbol based on detected invocation patterns.
 
 ### `crates/index/src/lib.rs`
 
-Main orchestrator that coordinates caching, file iteration, symbol extraction, import resolution, and call graph assembly. Groups indexed files into ModuleIndex objects and generates formatted context strings optimized for LLM injection.
+Orchestrates the entire indexing pipeline, coordinating file reading, caching, extraction, import resolution, call graph generation, and module grouping.
 
-- `build_index` (function) - Entry point that iterates over files, applies caching, and returns a complete ProjectIndex.
-- `index_one_file` (function) - Handles single-file processing: checks cache, runs extractor, resolves imports, and computes metrics.
-- `build_symbol_index` (function) - Creates a reverse lookup map from symbol names to file paths for fast resolution.
-- `build_call_graph` (function) - Aggregates flow data from all files into a unified call relationship structure.
-- `group_into_module_indices` (function) - Clusters related IndexedFiles into logical ModuleIndex units based on directory and naming conventions.
-- `format_module_context` (function) - Serializes a ModuleIndex into a compact, LLM-friendly string containing summaries, symbols, and edges.
+- `build_index` (function) - Public entry point that processes a file list and returns a complete ProjectIndex.
+- `index_one_file` (function) - Handles single-file processing including cache validation and language dispatch.
+- `build_symbol_index` (function) - Creates a fast lookup map from symbol names to their defining file paths.
+- `group_into_module_indices` (function) - Clusters related files into logical ModuleIndex units based on naming and path conventions.
+- `format_module_context` (function) - Generates a concise textual summary of a module's contents for prompt injection.
 
 ### `crates/index/src/resolve.rs`
 
-Maps import statements to actual module or file paths. Handles language-specific resolution rules to prevent broken references and ensure accurate module grouping.
+Resolves abstract import statements to concrete file paths using language-specific heuristics and path normalization.
 
-- `resolve_imports` (function) - Batch resolver that normalizes all import paths across the indexed project.
-- `resolve_one` (function) - Attempts to match a single import statement against candidate paths using language-specific heuristics.
-- `extract_module_path` (function) - Strips syntax prefixes and qualifiers to isolate the canonical module identifier.
-- `build_candidates` (function) - Generates filesystem and namespace permutations for an import path to maximize resolution success.
+- `resolve_imports` (function) - Maps all extracted imports across the project to their actual source locations.
+- `resolve_python_module` (function) - Applies Python sys.path and relative import logic to locate target modules.
+- `build_candidates` (function) - Generates potential file paths for an import based on source location and language rules.
 
 ## Key Concepts
 
-- **Structured Metadata Extraction**: Replaces raw text with typed definitions to eliminate irrelevant context, directly cutting LLM token costs.
-- **Line-Based Syntax Parsing**: Uses regex and indentation tracking instead of heavy AST compilers, enabling fast, low-memory processing across multiple languages.
-- **Call Flow Tracing**: Maps invocation relationships to answer behavioral questions ('how does X work?') without requiring full file loads.
-- **Import Normalization**: Aligns disparate import syntaxes into a unified module graph, ensuring accurate grouping and reference resolution.
-- **Content-Hashed Caching**: Skips unchanged files using cryptographic hashes, maintaining incremental indexing performance for large repositories.
+- **Regex-Based Language Parsing**: Avoids heavy AST compilation by using targeted regex and indentation analysis for rapid, broad-spectrum symbol extraction across multiple languages.
+- **Content-Addressed Caching**: Uses content hashes to skip unchanged files during indexing, significantly reducing rebuild times for large repositories.
+- **Call Graph Construction**: Transforms flat symbol lists into relational edges, enabling traversal of execution paths and dependency chains for contextual documentation.
+- **Logical Module Grouping**: Aggregates individual files into cohesive modules based on naming/path patterns, providing higher-level context for LLM prompts.
 
 ## Internal Relationships
 
-- `lib.rs` → `extract.rs`: Delegates per-file parsing to language-specific extractors via index_one_file.
-- `lib.rs` → `resolve.rs`: Invokes resolve_imports during indexing to link symbols across files and validate module boundaries.
-- `lib.rs` → `flow.rs`: Feeds extracted call sites into trace_flow to construct the global call graph.
-- `extract.rs` → `flow.rs`: Provides raw call site data that flow.rs converts into directed CallEdge structures.
-- `All files` → `repowiki_core::models`: Share immutable type definitions for IndexedSymbol, IndexedImport, FileMetrics, CallEdge, and ProjectIndex.
+- `crates/index/src/lib.rs` → `crates/index/src/extract.rs`: lib.rs delegates raw source parsing to extract.rs to populate IndexedFile structures.
+- `crates/index/src/lib.rs` → `crates/index/src/resolve.rs`: lib.rs passes unresolved imports from extract.rs to resolve.rs to establish cross-file links.
+- `crates/index/src/lib.rs` → `crates/index/src/flow.rs`: lib.rs uses resolved symbols and imports to invoke trace_flow, constructing the dependency graph.
+- `crates/index/src/extract.rs` → `crates/index/src/resolve.rs`: extract.rs produces IndexedImport records that serve as input for resolve.rs path resolution.
+- `crates/index/src/lib.rs` → `crates/index/Cargo.toml`: lib.rs depends on dependencies declared in Cargo.toml, specifically regex and repowiki_core models.

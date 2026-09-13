@@ -1,362 +1,340 @@
 # Symbol Index
 
-213 symbols across 13 modules.
+207 symbols across 13 modules.
 
 ## Const
 
 ### [cache](cache)
 
-- [`DEFAULT_TTL`](cache) - Sets the default expiration duration for cached entries in seconds.
+- [`DEFAULT_TTL`](cache) - Sets the default expiration duration in seconds for cached entries.
 
 ## Constant
 
 ### [export](export)
 
-- [`HTML_TEMPLATE`](export) - Base HTML layout template.
-- [`INDEX_HTML`](export) - Template string for the site entry point.
-- [`STATE_FILENAME`](export) - Filename for persisting export state across runs.
-- [`STATE_VERSION`](export) - Schema version for state file compatibility checks.
-- [`page`](export) - Template for individual documentation pages.
+- [`HTML_TEMPLATE`](export) - Base HTML skeleton used for wrapping exported pages.
+- [`INDEX_HTML`](export) - Static HTML string defining the layout and script injection for the site loader.
+- [`page`](export) - Page-specific HTML template containing structural markup and placeholder injection points.
 
-### [ingest](ingest)
+### [rag](rag)
 
-- [`MAX_REPO_SIZE_MB`](ingest) - Hard limit on repository size in megabytes to prevent resource exhaustion and control LLM costs.
-- [`git_url_regex`](ingest) - Compiled regex pattern used to validate and extract owner, repository, and branch components from Git URLs.
+- [`INDEX_DIR_NAME`](rag) - Defines the standard directory name used to store cached retrieval indices on disk.
 
 ### [scanner](scanner)
 
-- [`CODE_LANGS`](scanner) - Mapping of file extensions to recognized programming languages.
-- [`CONFIG_FILES`](scanner) - Names of standard configuration files to prioritize during indexing.
-- [`ENTRYPOINT_DIRS`](scanner) - Directory names typically containing main execution logic.
-- [`ENTRYPOINT_NAMES`](scanner) - Common filenames indicating application entry points or routers.
-- [`MINIFIED_SOURCE_EXTS`](scanner) - Extensions commonly associated with compressed frontend assets.
-- [`SENSITIVE_NAMES`](scanner) - Filenames containing secrets or credentials that are always filtered out.
-- [`SKIP_DIRS`](scanner) - List of directory names automatically excluded from traversal (e.g., node_modules, .git).
-- [`SKIP_EXTS`](scanner) - File extensions treated as non-source or build artifacts.
+- [`CODE_LANGS`](scanner) - Supported programming language extensions mapped for detection purposes.
+- [`CONFIG_FILES`](scanner) - Standard configuration filenames used to identify project setup files.
+- [`ENTRYPOINT_DIRS`](scanner) - Directory names treated as primary source roots.
+- [`ENTRYPOINT_NAMES`](scanner) - Filenames recognized as application or library entry points.
+- [`MINIFIED_SOURCE_EXTS`](scanner) - Extensions for compressed frontend bundles that lack readable structure.
+- [`SENSITIVE_NAMES`](scanner) - Filenames containing secrets, credentials, or private keys that must never be scanned.
+- [`SKIP_DIRS`](scanner) - Hardcoded list of directory names to exclude (e.g., .git, node_modules, target).
+- [`SKIP_EXTS`](scanner) - File extensions filtered out to avoid parsing binaries or generated assets.
 
 ## Enum
 
 ### [cache](cache)
 
-- [`CacheError`](cache) - Defines error types for database operations, IO failures, and cache mismatches.
+- [`CacheError`](cache) - Defines errors for database connection failures, query execution issues, and I/O problems.
 
 ### [cli](cli)
 
-- [`Commands`](cli) - Maps CLI subcommands to their corresponding handler functions.
+- [`Commands`](cli) - Defines all available CLI subcommands including map, scan, serve, cache-clear, index, chat, and config.
+- [`ConfigAction`](cli) - Enumerates configuration management operations like setting or retrieving API keys.
+- [`MapFormat`](cli) - Specifies output serialization formats for dependency graphs.
+- [`ScanFormat`](cli) - Controls how scan reports are serialized for terminal or file output.
 
 ### [core](core)
 
-- [`SymbolKind`](core) - Type-safe categorization of code elements (function, class, variable, etc.).
-- [`Visibility`](core) - Encapsulates access modifiers (public, private, protected) for accurate indexing.
-
-### [llm](llm)
-
-- [`LLMError`](llm) - Standardized error type for API failures and parsing issues.
+- [`SymbolKind`](core) - Identifies code element types (function, class, variable, module, etc.) for proper categorization.
+- [`Visibility`](core) - Classifies symbol accessibility (public, private, protected) for accurate documentation scoping.
 
 ## Function
 
 ### [analyzer](analyzer)
 
-- [`analyze_one_module`](analyzer) - Executes the actual LLM call for a single module, applying caching, prompt templating, and JSON extraction.
-- [`build_key_files_context`](analyzer) - Formats critical entry-point files into a concise string for prompt injection, reducing raw code bloat.
-- [`build_module_summary`](analyzer) - Extracts and formats structural metadata from the project index to provide lightweight context for LLM queries.
+- [`analyze_one_module`](analyzer) - Handles single-module analysis: checks cache, constructs prompt, calls LLM, parses JSON response, and stores result.
+- [`build_key_files_context`](analyzer) - Extracts and formats critical project files into a concise string for LLM context injection.
+- [`build_module_summary`](analyzer) - Condenses the project index into a structured summary to reduce token usage during module analysis.
 
 ### [cache](cache)
 
-- [`cache_dir`](cache) - Returns the standard directory path where the cache database and related files are stored.
-- [`content_hash`](cache) - Computes a SHA-256 hex digest of a string to enable deterministic deduplication of identical code/content.
+- [`cache_dir`](cache) - Returns the directory path where the SQLite database file is stored.
+- [`content_hash`](cache) - Computes a SHA-256 hash of a string to generate deterministic, collision-resistant cache keys.
 - [`default_db_path`](cache) - Constructs the full file path to the SQLite database within the cache directory.
-- [`now_secs`](cache) - Returns the current Unix timestamp as a float for TTL calculations.
+- [`now_secs`](cache) - Retrieves the current Unix timestamp in seconds for TTL calculations.
 
 ### [cli](cli)
 
-- [`cmd_cache_clear`](cli) - Purges the local caching layer storing intermediate analysis and LLM responses.
-- [`cmd_chat`](cli) - Starts an interactive REPL session with the LLM, injecting retrieved code context into prompts.
-- [`cmd_config`](cli) - Manages persistent configuration, including model resolution and credential storage.
-- [`cmd_index`](cli) - Builds or refreshes the semantic index used for RAG-based code retrieval.
-- [`cmd_map`](cli) - Generates and outputs a dependency visualization or summary for a specified project path.
-- [`cmd_scan`](cli) - Scans a directory tree, collects file metadata, and produces a structured scan report.
-- [`cmd_serve`](cli) - Initializes and runs an asynchronous HTTP server to expose the generated wiki and API endpoints.
-- [`run_analysis`](cli) - Orchestrates the core workflow: loads project context, formats prompts, queries the LLM, and constructs wiki pages.
+- [`cmd_cache_clear`](cli) - Removes cached LLM responses and intermediate artifacts to force fresh analysis.
+- [`cmd_chat`](cli) - Enters an interactive REPL loop that queries the LLM using formatted project context and chat history.
+- [`cmd_config`](cli) - Manages persistent configuration actions such as setting API keys or selecting default models.
+- [`cmd_index`](cli) - Triggers RAG index construction or rebuild for a given codebase path.
+- [`cmd_map`](cli) - Generates and displays a dependency graph for a target codebase in the specified format.
+- [`cmd_scan`](cli) - Scans a directory tree for code files and outputs a structured scan report.
+- [`cmd_serve`](cli) - Initializes and starts the HTTP server, binding to a port and serving the web interface with shared application state.
+- [`is_url`](cli) - Determines whether a provided string is a remote Git URL or a local filesystem path.
+- [`main`](cli) - Application bootstrap: parses arguments, initializes tokio runtime, resolves configuration, and dispatches to the appropriate command handler.
+- [`run_analysis`](cli) - Orchestrates the full documentation pipeline: loads project context, builds RAG index, invokes the analyzer with LLM prompts, and constructs the final wiki.
 
 ### [core](core)
 
-- [`config_dir`](core) - Computes the standard directory path for storing application configuration.
-- [`config_file`](core) - Constructs the full path to the active configuration JSON file.
-- [`model_aliases`](core) - Returns a static mapping of shorthand provider names to their full endpoint strings.
-- [`resolve_model`](core) - Resolves a user-provided model name against aliases and returns the canonical string.
+- [`resolve_model`](core) - Maps shorthand alias strings to full provider/model identifiers based on a static lookup table.
 
 ### [export](export)
 
-- [`export_html`](export) - Main entry point; orchestrates HTML generation and writes files to disk.
-- [`export_json`](export) - Traverses the wiki and writes serialized JSON to the target path.
-- [`export_markdown`](export) - Iterates pages, applies change detection, and writes markdown files.
-- [`html_escape`](export) - Prevents XSS by escaping special characters.
-- [`inline_md`](export) - Processes inline markdown snippets within larger documents.
-- [`load_state`](export) - Reads and deserializes the previous export state.
-- [`markdown_to_html`](export) - Parses markdown strings into HTML, resolving cross-page links.
-- [`normalize_path`](export) - Sanitizes and standardizes relative paths for HTML anchors.
-- [`readme_text`](export) - Creates overview markdown for the repository root.
-- [`save_state`](export) - Writes updated export metadata to disk.
-- [`serialize_sidebar`](export) - Recursively flattens the sidebar tree into a JSON-compatible array.
-- [`sidebar_text`](export) - Generates navigation markdown blocks.
-- [`strip_md_from_internal_links`](export) - Removes raw markdown syntax from links to ensure renderer compatibility.
-- [`write_if_changed`](export) - Performs atomic writes only when content differs from existing files.
-- [`write_site_loader`](export) - Writes the index file to the target directory.
+- [`export_html`](export) - Orchestrates the full HTML export pipeline, writing rendered pages to the specified output directory.
+- [`export_json`](export) - Serializes the Wiki model into JSON format and writes it to the target path.
+- [`export_markdown`](export) - Main entry point for Markdown export. Iterates through pages, applies incremental checks, and writes only modified files.
+- [`html_escape`](export) - Sanitizes user-generated or LLM-produced text to prevent XSS and malformed HTML.
+- [`inline_md`](export) - Processes inline Markdown snippets within larger documents, maintaining link context and formatting rules.
+- [`load_state`](export) - Reads the previous export state file from disk to determine which pages require regeneration.
+- [`markdown_to_html`](export) - Parses raw Markdown strings into HTML, resolving internal page links and handling formatting directives.
+- [`normalize_path`](export) - Standardizes file paths and link references to ensure consistent cross-page navigation.
+- [`readme_text`](export) - Constructs the project README Markdown, integrating overview data and navigation links.
+- [`save_state`](export) - Writes updated state and page hashes back to disk after a successful export cycle.
+- [`serialize_sidebar`](export) - Recursively flattens the sidebar item tree into a JSON-compatible vector structure.
+- [`sidebar_text`](export) - Generates Markdown-formatted navigation trees based on the wiki hierarchy.
+- [`strip_md_from_internal_links`](export) - Removes Markdown extension suffixes from internal links to ensure cross-platform compatibility.
+- [`write_if_changed`](export) - Compares new content against existing files and only performs disk I/O if the content differs.
+- [`write_site_loader`](export) - Writes the INDEX_HTML constant to the output directory, configuring the title and redirect behavior.
 
 ### [frontend](frontend)
 
-- [`escapeHtml`](frontend) - Strips dangerous characters from markdown content to prevent XSS attacks.
-- [`getFileContent`](frontend) - Downloads raw source file content referenced within the documentation.
-- [`getHeaders`](frontend) - Attaches authentication tokens and content-type headers to outgoing requests.
-- [`getPage`](frontend) - Retrieves the full markdown content for a specific wiki page by ID.
-- [`getWiki`](frontend) - Fetches the complete documentation tree structure for a given project.
-- [`handleScan`](frontend) - Validates form inputs, calls the scan API, updates global store with progress, and redirects upon completion.
-- [`handleSend`](frontend) - Processes user input, appends it to the store, triggers the streaming API call, and manages loading states.
-- [`markdownToHtml`](frontend) - Converts standard markdown segments into sanitized HTML for rendering.
-- [`scanProject`](frontend) - Triggers the backend indexing pipeline and returns the resulting project identifier.
-- [`splitMermaid`](frontend) - Parses input markdown string and separates standard text from fenced Mermaid code blocks.
-- [`streamChat`](frontend) - Sends user queries to the LLM and yields incremental response chunks via stream.
-- [`streamScanProgress`](frontend) - Establishes a streaming connection to monitor real-time indexing status and logs.
+- [`escapeHtml`](frontend) - Sanitizes plain text to prevent XSS when rendering untrusted wiki content.
+- [`getFileContent`](frontend) - Fetches raw source file contents linked from the wiki.
+- [`getHeaders`](frontend) - Constructs authentication and content-type headers for API requests.
+- [`getPage`](frontend) - Retrieves the raw markdown content for a specific wiki page.
+- [`getWiki`](frontend) - Fetches the complete wiki structure and metadata for a project.
+- [`handleScan`](frontend) - Initiates the backend codebase scan process and updates progress state.
+- [`handleSend`](frontend) - Processes user input and triggers the streaming chat endpoint.
+- [`markdownToHtml`](frontend) - Converts processed markdown segments into sanitized HTML.
+- [`scanProject`](frontend) - Triggers the initial codebase analysis job on the backend.
+- [`splitMermaid`](frontend) - Extracts Mermaid code blocks from raw markdown strings.
+- [`streamChat`](frontend) - Sends user queries to the LLM and streams incremental responses.
+- [`streamScanProgress`](frontend) - Establishes a WebSocket connection to receive real-time scan logs.
 
 ### [graph](graph)
 
-- [`get_module`](graph) - Derives a logical module name from a file path.
-- [`import_patterns`](graph) - Returns language-specific regex patterns for extracting import statements.
-- [`mermaid_id`](graph) - Escapes and formats file names into valid Mermaid node identifiers.
-- [`normalize_path`](graph) - Sanitizes and standardizes file paths to ensure consistent node identification.
-- [`pagerank_power_iteration`](graph) - Implements the iterative PageRank algorithm to converge on stable importance scores.
-- [`resolve_import`](graph) - Matches an import statement against known patterns and resolves it to a target file path.
-- [`resolve_python_module`](graph) - Specialized resolver for Python import paths, handling relative imports and module-to-file mapping.
+- [`get_module`](graph) - Extracts the logical module name from a file path by stripping extensions and directory separators.
+- [`import_patterns`](graph) - Returns a vector of compiled Regex patterns tailored to specific programming languages for extracting import statements.
+- [`mermaid_id`](graph) - Sanitizes file or module names to produce valid, URL-safe identifiers required by Mermaid.js node definitions.
+- [`normalize_path`](graph) - Standardizes file paths by stripping prefixes, resolving symlinks, and ensuring consistent casing for reliable graph node indexing.
+- [`pagerank_power_iteration`](graph) - Implements the iterative power method algorithm to converge on stable PageRank scores for each node in the graph.
+- [`resolve_import`](graph) - Resolves matched import tokens against the project filesystem to produce normalized, absolute file paths.
+- [`resolve_python_module`](graph) - Specialized resolver for Python import syntax, handling relative dots, __init__.py mappings, and package prefixes.
 
 ### [index](index)
 
-- [`build_call_graph`](index) - Aggregates flow data from all files into a unified call relationship structure.
-- [`build_candidates`](index) - Generates filesystem and namespace permutations for an import path to maximize resolution success.
-- [`build_index`](index) - Entry point that iterates over files, applies caching, and returns a complete ProjectIndex.
-- [`build_outgoing`](index) - Generates CallEdge records mapping caller functions to their invoked callees.
-- [`build_symbol_index`](index) - Creates a reverse lookup map from symbol names to file paths for fast resolution.
-- [`compute_metrics`](index) - Calculates file-level statistics including cyclomatic complexity and line counts for prioritization.
-- [`extract_go`](index) - Scans Go files for packages, structs, methods, interfaces, and import declarations.
-- [`extract_java`](index) - Processes Java classes, methods, fields, annotations, and package imports with visibility detection.
-- [`extract_module_path`](index) - Strips syntax prefixes and qualifiers to isolate the canonical module identifier.
-- [`extract_python`](index) - Parses Python files to collect classes, functions, imports, docstrings, and method calls using indentation-aware scanning.
-- [`extract_rust`](index) - Extracts Rust modules, structs, impl blocks, functions, macros, and trait implementations via pattern matching.
-- [`extract_symbols`](index) - Public dispatcher that routes raw source content to the correct language extractor based on detected syntax.
-- [`extract_typescript`](index) - Captures TS interfaces, classes, methods, enums, and ES module imports using brace/indent tracking.
-- [`format_module_context`](index) - Serializes a ModuleIndex into a compact, LLM-friendly string containing summaries, symbols, and edges.
-- [`group_into_module_indices`](index) - Clusters related IndexedFiles into logical ModuleIndex units based on directory and naming conventions.
-- [`index_one_file`](index) - Handles single-file processing: checks cache, runs extractor, resolves imports, and computes metrics.
-- [`resolve_imports`](index) - Batch resolver that normalizes all import paths across the indexed project.
-- [`resolve_one`](index) - Attempts to match a single import statement against candidate paths using language-specific heuristics.
-- [`trace_flow`](index) - Analyzes extracted call sites to build a graph of execution dependencies between symbols.
+- [`build_candidates`](index) - Generates potential file paths for an import based on source location and language rules.
+- [`build_index`](index) - Public entry point that processes a file list and returns a complete ProjectIndex.
+- [`build_outgoing`](index) - Constructs outgoing call edges for a specific symbol based on detected invocation patterns.
+- [`build_symbol_index`](index) - Creates a fast lookup map from symbol names to their defining file paths.
+- [`compute_metrics`](index) - Calculates complexity and structural metrics for a given code snippet.
+- [`extract_go`](index) - Parses Go source to return indexed symbols and imports.
+- [`extract_java`](index) - Parses Java source to return indexed symbols and imports.
+- [`extract_python`](index) - Parses Python source to return indexed symbols and imports.
+- [`extract_rust`](index) - Parses Rust source to return indexed symbols and imports.
+- [`extract_symbols`](index) - Dispatches to language-specific extractors based on file extension.
+- [`extract_typescript`](index) - Parses TypeScript source to return indexed symbols and imports.
+- [`format_module_context`](index) - Generates a concise textual summary of a module's contents for prompt injection.
+- [`group_into_module_indices`](index) - Clusters related files into logical ModuleIndex units based on naming and path conventions.
+- [`index_one_file`](index) - Handles single-file processing including cache validation and language dispatch.
+- [`resolve_imports`](index) - Maps all extracted imports across the project to their actual source locations.
+- [`resolve_python_module`](index) - Applies Python sys.path and relative import logic to locate target modules.
+- [`trace_flow`](index) - Analyzes extracted symbols to generate CallEdge objects mapping caller-callee relationships.
 
 ### [ingest](ingest)
 
-- [`authenticated_clone_url`](ingest) - Injects resolved credentials into the clone URL to enable secure access to restricted repositories.
-- [`clone_dir`](ingest) - Creates an isolated temporary directory for safely cloning repositories without polluting the host filesystem.
-- [`clone_url`](ingest) - Constructs the base git clone command string for unauthenticated access.
-- [`dir_size_mb`](ingest) - Recursively calculates the total size of a cloned directory in megabytes for size validation.
-- [`guess_project_name`](ingest) - Derives a readable project identifier from the root directory path or contained file names.
-- [`ingest_github`](ingest) - Main orchestrator that clones, validates size, extracts metadata, and returns a standardized ProjectContext and ScanReport.
-- [`ingest_local`](ingest) - Orchestrates local directory scanning, delegates to repowiki_scanner, and returns a unified ProjectContext and ScanReport.
-- [`parse_git_url`](ingest) - Extracts and validates the owner, repository name, and branch/tag from a raw Git URL string.
-- [`remove_dir_all`](ingest) - Safely deletes the temporary clone directory and all its contents after processing completes.
-- [`resolve_token`](ingest) - Securely retrieves a GitHub personal access token from environment variables for private repository access.
+- [`authenticated_clone_url`](ingest) - Constructs a clone-ready URL by injecting resolved authentication tokens when required.
+- [`clone_dir`](ingest) - Generates a secure, unique temporary directory path for storing cloned repositories.
+- [`dir_size_mb`](ingest) - Calculates the total disk footprint of a directory to enforce the MAX_REPO_SIZE_MB constraint.
+- [`guess_project_name`](ingest) - Infers a human-readable project identifier from the root directory name or primary file structure.
+- [`ingest_github`](ingest) - Orchestrates the full remote ingestion workflow: parses the URL, resolves credentials, clones the repository, validates its size against MAX_REPO_SIZE_MB, and returns a ProjectContext.
+- [`ingest_local`](ingest) - Scans a local directory path, constructs a file tree, generates a ScanReport, and returns a normalized ProjectContext.
+- [`parse_git_url`](ingest) - Extracts organization, repository name, and base URL from a standard GitHub HTTP/SSH string using regex.
+- [`remove_dir_all`](ingest) - Safely deletes the temporary clone directory after ingestion completes or fails.
+- [`resolve_token`](ingest) - Retrieves the GitHub access token from environment variables or configuration to enable private repository access.
 
 ### [llm](llm)
 
-- [`build_architecture_prompt`](llm) - Constructs prompts focused on cross-module relationships and system design.
-- [`build_module_prompt`](llm) - Creates prompts for analyzing individual modules or directories.
-- [`build_overview_prompt`](llm) - Generates system and user messages for high-level codebase summarization.
-- [`build_reading_guide_prompt`](llm) - Produces prompts that generate navigational instructions for developers.
-- [`complete`](llm) - Sends a prompt sequence and returns a single complete response.
-- [`extract_json`](llm) - Applies regex filtering to isolate valid JSON blocks from raw LLM text.
-- [`resolve_api_base`](llm) - Determines the correct endpoint URL based on model and key heuristics.
-- [`resolve_model_name`](llm) - Normalizes model identifiers to match provider expectations.
-- [`stream`](llm) - Sends a prompt sequence and yields an async iterator of response chunks.
+- [`build_architecture_prompt`](llm) - Generates prompts targeting cross-module relationships and system design patterns.
+- [`build_chat_prompt`](llm) - Formats conversational history and current queries for interactive documentation assistance.
+- [`build_module_prompt`](llm) - Constructs focused prompts for analyzing individual modules or directories.
+- [`build_overview_prompt`](llm) - Assembles initial context messages using file tree, key files, and language to generate high-level documentation.
+- [`extract_json`](llm) - Sanitizes raw LLM text output using regex to isolate and parse valid JSON payloads.
+- [`resolve_api_base`](llm) - Normalizes or defaults the API endpoint URL based on the provided model and explicit override.
 
 ### [rag](rag)
 
-- [`cosine_similarity`](rag) - Computes dot product of normalized TF vectors to determine semantic alignment between query and indexed chunks.
-- [`format_context`](rag) - Converts retrieved Chunk slices into a delimited string optimized for direct injection into LLM system prompts.
-- [`index_fingerprint`](rag) - Generates a deterministic SHA-256 hash from project metadata to detect structural or content changes.
-- [`load_or_build_index`](rag) - Validates project state against a cached SHA-256 fingerprint. Loads existing index if unchanged, otherwise triggers a full rebuild.
-- [`split_into_chunks`](rag) - Divides file contents into fixed-length line ranges, attaching file path and line boundaries to each segment.
-- [`tokenize`](rag) - Splits raw text into alphanumeric tokens using regex, stripping punctuation and normalizing case for consistent vector mapping.
+- [`cosine_similarity`](rag) - Computes the dot product of two normalized vectors divided by their magnitudes, measuring angular similarity between query and chunk vectors.
+- [`default_index_dir`](rag) - Returns the filesystem path where the RAG index cache is stored, abstracting OS-specific directory resolution.
+- [`format_context`](rag) - Transforms retrieved Chunk objects into a delimited string template optimized for LLM prompt injection and readability.
+- [`index_fingerprint`](rag) - Generates a deterministic SHA-256 hash of the project state to detect modifications and invalidate stale cached indices.
+- [`load_or_build_index`](rag) - Orchestrates the caching strategy by checking the project fingerprint, loading a cached index if valid, or triggering a full rebuild otherwise.
+- [`split_into_chunks`](rag) - Splits source file contents into overlapping or fixed-size blocks at line boundaries to preserve syntactic coherence.
+- [`tokenize`](rag) - Normalizes input text into lowercase alphanumeric tokens, stripping punctuation and whitespace for consistent vector mapping.
 
 ### [scanner](scanner)
 
-- [`build_file_tree`](scanner) - Formats a sorted slice of FileInfo objects into a hierarchical string representation for wiki rendering.
-- [`detect_language`](scanner) - Maps a file path's extension to a human-readable language identifier using CODE_LANGS.
-- [`glob_match`](scanner) - Public wrapper that delegates to the inner byte-level glob evaluator.
-- [`glob_match_inner`](scanner) - Low-level recursive parser that matches glob patterns against raw byte slices without allocating intermediate strings.
-- [`has_skipped_suffix`](scanner) - Checks if a path ends with any extension in SKIP_EXTS.
-- [`is_binary`](scanner) - Inspects file headers for magic bytes to determine if a file is binary and should be skipped.
-- [`is_entrypoint`](scanner) - Determines if a path corresponds to a known entrypoint file or directory.
+- [`build_file_tree`](scanner) - Concatenates the contents of filtered FileInfo objects into a single delimited string for LLM context injection.
+- [`detect_language`](scanner) - Resolves the programming language of a file by checking its extension against lang_map.
+- [`from_root`](scanner) - Constructs an IgnoreRules instance by loading standard exclusion patterns relative to the repository root.
+- [`glob_match`](scanner) - Lightweight custom glob matcher that compares a pattern against a file path without external dependencies.
+- [`has_skipped_suffix`](scanner) - Checks if a path ends with an extension defined in SKIP_EXTS.
+- [`is_binary`](scanner) - Inspects raw file bytes to detect binary formats and prevent them from being parsed as text.
+- [`is_entrypoint`](scanner) - Determines if a file matches known root configuration or application startup filenames.
 - [`is_sensitive_name`](scanner) - Verifies if a filename matches any pattern in SENSITIVE_NAMES.
-- [`looks_minified_source`](scanner) - Applies content heuristics to detect highly compressed or obfuscated source code.
-- [`scan_directory`](scanner) - Main entry point that walks a directory tree, applies IgnoreRules and heuristics, collects metadata, and returns a ScanReport.
-- [`sort_key`](scanner) - Generates a tuple priority key to order entrypoints and configurations above regular source files.
+- [`lang_map`](scanner) - Returns a static lookup table mapping file extensions to canonical language identifiers.
+- [`looks_minified_source`](scanner) - Heuristic check to identify compressed JavaScript/TypeScript files that lack readable structure.
+- [`matches`](scanner) - Evaluates whether a given relative path and directory flag should be skipped based on loaded patterns.
+- [`scan_directory`](scanner) - Main traversal function that uses WalkDir, applies IgnoreRules, classifies files, and returns a ScanReport.
+- [`sort_key`](scanner) - Generates a sort tuple that prioritizes entry points and sorts remaining files alphabetically for deterministic output.
 
 ### [server](server)
 
-- [`chat`](server) - POST endpoint that queries the RAG index, builds a prompt using repowiki_llm, and streams the LLM's token-by-token response.
-- [`create_app`](server) - Constructs and returns the root Axum Router, wiring routes and injecting AppState.
-- [`get_graph`](server) - GET endpoint returning the serialized dependency graph for visualization.
-- [`get_page`](server) - GET endpoint fetching rendered markdown content for a specific wiki page.
-- [`get_wiki`](server) - GET endpoint returning the top-level wiki structure and sidebar items.
-- [`run_scan`](server) - Background executor that coordinates ingestion, graph building, and wiki generation, updating AppState upon completion.
-- [`start_scan`](server) - POST endpoint that validates input, generates a project ID, and spawns a background task to run the scan.
-- [`stream_status`](server) - GET endpoint that establishes an SSE connection to stream real-time scan progress to the client.
+- [`chat`](server) - Processes user questions by retrieving relevant context from the RAG index, constructing prompts, and streaming LLM responses via SSE.
+- [`create_app`](server) - Assembles the top-level HTTP router, applies CORS, mounts sub-routers, and injects AppState.
+- [`get_file`](server) - Returns raw source file references or snippets linked to documentation entries.
+- [`get_graph`](server) - Fetches the serialized dependency graph for frontend visualization.
+- [`get_page`](server) - Fetches a specific documentation page by identifier.
+- [`get_wiki`](server) - Retrieves the high-level wiki structure and table of contents.
+- [`routes`](server) - Mounts the chat handler under the /chat route prefix.
+- [`run_scan`](server) - Core workflow engine that resolves configuration, spawns background tasks, and manages lifecycle hooks.
+- [`run_scan_inner`](server) - Executes the sequential pipeline: code ingestion, dependency graph construction, LLM analysis, and wiki persistence.
+- [`serialize_sidebar`](server) - Converts internal wiki navigation nodes into JSON-compatible structures for UI rendering.
+- [`start_scan`](server) - Triggers asynchronous background processing for a new or existing project based on ScanRequest parameters.
+- [`stream_status`](server) - Returns real-time scan progress updates via SSE to avoid client polling.
 
 ## Interface
 
 ### [frontend](frontend)
 
-- [`ChatMessage`](frontend) - Represents a complete chat turn including role, content, and optional references.
-- [`ChatReference`](frontend) - Tracks context snippets or source links attached to AI chat responses.
-- [`ChatTurn`](frontend) - Schema representing a single message exchange in the AI chat session.
-- [`ContentPart`](frontend) - Discriminated union type distinguishing between standard markdown text and Mermaid diagram blocks.
-- [`PageMeta`](frontend) - Lightweight metadata for wiki pages used in navigation and previews.
-- [`ProjectInfo`](frontend) - Metadata returned after successful project scan completion.
-- [`Props`](frontend) - Defines expected props for diagram rendering including content and container dimensions.
-- [`ScanRequest`](frontend) - Schema for initiating a new codebase indexing job.
-- [`SidebarItem`](frontend) - Individual node definition for sidebar navigation components.
-- [`WikiPage`](frontend) - Full document payload containing markdown content and associated metadata.
-- [`WikiStore`](frontend) - Defines the shape of the global state slice including selectors, setters, and initialization logic.
-- [`WikiStructure`](frontend) - Hierarchical representation of the generated documentation tree.
+- [`ChatMessage`](frontend) - Represents a single turn in the AI conversation history.
+- [`ChatReference`](frontend) - Defines metadata linking a chat message to a specific wiki page or code artifact.
+- [`ContentPart`](frontend) - Represents a parsed segment of markdown, distinguishing between text and diagram blocks.
+- [`Props`](frontend) - Defines expected attributes for the diagram wrapper component.
+- [`WikiStore`](frontend) - Defines the shape of the global Zustand store including scan status, wiki data, and chat state.
 
 ## Method
 
 ### [analyzer](analyzer)
 
-- [`analyze`](analyzer) - Top-level workflow coordinator that triggers overview, module, architecture, and reading guide generation sequentially.
-- [`analyze_modules`](analyzer) - Iterates through the project index, delegating individual module analysis to analyze_one_module while respecting concurrency limits.
-- [`generate_architecture`](analyzer) - Constructs system-level design documentation by traversing the dependency graph and injecting it into architecture prompts.
-- [`generate_overview`](analyzer) - Produces a high-level project summary using aggregated index data and overview-specific prompts.
-- [`generate_reading_guide`](analyzer) - Outputs a curated sequence of modules and files to help developers navigate the codebase logically based on dependencies.
-- [`new`](analyzer) - Constructor initializing the analyzer with required dependencies and configurable concurrency limits.
+- [`analyze`](analyzer) - Top-level entry point that sequentially executes overview, module, architecture, and reading guide generation phases.
+- [`analyze_modules`](analyzer) - Iterates through the project index, builds contextual summaries, and spawns concurrent tasks to analyze each module.
+- [`generate_architecture`](analyzer) - Analyzes the dependency graph to produce structural documentation about component relationships.
+- [`generate_overview`](analyzer) - Constructs and sends a prompt to generate a high-level project summary using the LLM.
+- [`generate_reading_guide`](analyzer) - Generates a prioritized sequence of files/modules recommended for new developers to understand the codebase.
+- [`new`](analyzer) - Constructor that initializes the analyzer with injected dependencies and sets concurrency limits.
 
 ### [cache](cache)
 
-- [`Cache::clear`](cache) - Drops all cached entries and resets the database, returning the number of removed rows.
-- [`Cache::get`](cache) - Retrieves a cached JSON value by key, returning None if expired or missing.
-- [`Cache::get_default_ttl`](cache) - Fetches a cached value using DEFAULT_TTL for expiration checks.
-- [`Cache::load_project`](cache) - Loads a previously saved project document or index state by ID.
-- [`Cache::open`](cache) - Initializes or opens the SQLite database at the specified path, creating tables if necessary.
-- [`Cache::put`](cache) - Stores a JSON value under a key with a custom TTL, overwriting existing entries.
-- [`Cache::save_project`](cache) - Persists a complete project document or index state under a project-scoped key.
+- [`clear`](cache) - Deletes all cached entries and resets the database, returning the count of removed records.
+- [`get`](cache) - Retrieves a JSON value by key, returning None if the entry is missing or has exceeded its TTL.
+- [`get_default_ttl`](cache) - Fetches a cached value using the DEFAULT_TTL configuration instead of a custom expiration window.
+- [`load_project`](cache) - Retrieves previously saved project documentation, returning None if not found or expired.
+- [`open`](cache) - Initializes the SQLite database, creates necessary tables if missing, and returns a connected Cache instance.
+- [`put`](cache) - Stores a JSON value against a key with an explicit TTL, overwriting existing entries.
+- [`save_project`](cache) - Persists project-specific documentation data under a unique project identifier.
 
 ### [core](core)
 
-- [`ConfigFile::load`](core) - Deserializes and validates configuration from disk into a Config struct.
-- [`ConfigFile::save`](core) - Serializes current configuration state back to disk atomically.
-
-### [export](export)
-
-- [`eq`](export) - Compares two PageState instances for equality.
+- [`load`](core) - Deserializes configuration from disk into a Config instance, applying defaults for missing fields.
+- [`save`](core) - Serializes current configuration state back to disk, enabling persistent user preferences.
 
 ### [graph](graph)
 
-- [`build_from_project`](graph) - Parses ProjectContext to extract imports using language-specific regex patterns and constructs the dependency graph.
-- [`edges`](graph) - Extracts all directed edge pairs from the graph.
-- [`find_circular_dependencies`](graph) - Uses Tarjan's strongly connected components algorithm to detect and return cycles up to a specified limit.
-- [`find_isolated_files`](graph) - Locates nodes with no incoming or outgoing edges, indicating orphaned or standalone code.
-- [`get_core_files`](graph) - Returns the top N highest-ranked files based on PageRank scores.
-- [`get_entry_points`](graph) - Identifies nodes with zero incoming edges, representing public APIs or binaries.
-- [`get_module_dependencies`](graph) - Aggregates dependencies by logical module rather than individual files.
-- [`nodes`](graph) - Extracts all node identifiers from the graph.
-- [`rank_files`](graph) - Computes PageRank scores for all nodes to quantify file importance and connectivity.
-- [`to_mermaid`](graph) - Serializes the graph into Mermaid.js flowchart syntax for visual inspection.
+- [`build_from_project`](graph) - Parses all files in the ProjectContext, extracts imports using language-specific regex patterns, resolves paths, and populates the directed dependency graph.
+- [`edges`](graph) - Returns a list of tuples representing directed import relationships between source and target files.
+- [`find_circular_dependencies`](graph) - Applies Tarjan's SCC algorithm to detect cyclic import chains, capped at a specified limit to prevent performance degradation.
+- [`find_isolated_files`](graph) - Identifies files with no incoming or outgoing dependency edges, flagging them as potentially undocumented or standalone.
+- [`get_core_files`](graph) - Filters the ranked files and returns the top N most important modules based on PageRank thresholds.
+- [`get_entry_points`](graph) - Returns files with zero incoming edges, identifying root modules or application entrypoints.
+- [`get_module_dependencies`](graph) - Maps each module name to a set of its direct downstream dependencies for quick lookup during documentation generation.
+- [`nodes`](graph) - Returns a flat list of all file paths represented as graph nodes.
+- [`rank_files`](graph) - Computes and returns a sorted list of files with their PageRank scores to quantify module importance and centrality.
+- [`to_mermaid`](graph) - Transforms internal graph nodes and edges into Mermaid.js flowchart syntax for static wiki visualization.
+
+### [llm](llm)
+
+- [`complete`](llm) - Sends a Vec<ChatMessage> to the API and deserializes the full response into a ChatResponse struct.
+- [`stream`](llm) - Initiates a streaming request, yielding incremental StreamChunk events as the LLM generates tokens.
 
 ### [rag](rag)
 
-- [`index`](rag) - Processes a ProjectContext, splits source files into bounded line chunks, computes TF-IDF statistics, and populates internal vectors.
-- [`retrieve`](rag) - Tokenizes a query, calculates cosine similarity against stored TF vectors, and returns the top-k highest-scoring Chunks.
-
-### [scanner](scanner)
-
-- [`from_root`](scanner) - Initializes IgnoreRules by loading patterns from a specified directory root.
-- [`matches`](scanner) - Evaluates a relative path and directory flag against stored patterns to return true if the path should be ignored.
-
-## Module_declaration
-
-### [core](core)
-
-- [`mod config`](core) - Exposes configuration module to external consumers.
-- [`mod models`](core) - Exposes domain data structures for indexing and wiki generation.
+- [`index`](rag) - Scans a ProjectContext, splits files into chunks, computes TF-IDF representations, and populates the internal vectors.
+- [`load_index`](rag) - Deserializes a previously saved index from disk, returning None if the file is missing or corrupted.
+- [`new`](rag) - Initializes an empty SimpleRAG instance with zeroed-out vectors and an empty chunk collection.
+- [`retrieve`](rag) - Converts a query string into a TF-IDF vector, calculates cosine similarity against stored chunks, and returns the top-k most relevant results.
+- [`save_index`](rag) - Serializes the current index state to a specified file path using serde, enabling persistence across application restarts.
 
 ## Struct
 
 ### [analyzer](analyzer)
 
-- [`Analyzer`](analyzer) - Stateful orchestrator holding references to the LLM client, cache, concurrency semaphore, language, and output prefix.
+- [`Analyzer`](analyzer) - Main orchestrator holding LLM client, cache, language config, concurrency semaphore, and cache key registry.
 
 ### [cache](cache)
 
-- [`Cache`](cache) - Wraps a rusqlite Connection and provides methods for reading, writing, and managing cached data.
+- [`Cache`](cache) - Wraps a thread-safe SQLite connection and exposes methods for storing, retrieving, and managing cached data.
 
 ### [cli](cli)
 
-- [`Cli`](cli) - Root structure defining the top-level CLI schema parsed by clap.
+- [`Cli`](cli) - Root clap structure defining the top-level CLI schema and routing to subcommands.
 
 ### [core](core)
 
-- [`ArchitectureDiagram`](core) - Structures component relationships, data flows, and Mermaid diagram definitions.
-- [`Config`](core) - Holds runtime parameters (model, api_key, concurrency, limits) with built-in defaults.
-- [`FileInfo`](core) - Represents a scanned file's metadata, content preview, and classification flags.
-- [`IndexedFile`](core) - Stores parsed metrics, symbol lists, import/export graphs, and content hashes for a single file.
-- [`IndexedSymbol`](core) - Captures detailed symbol attributes including visibility, parameters, return types, and call targets.
-- [`ProjectContext`](core) - Holds root-level project metadata, file tree, and coverage statistics.
-- [`ProjectIndex`](core) - Root container for the entire codebase index, linking modules, call graphs, and symbol lookups.
-- [`ReadingGuide`](core) - Defines sequential learning steps, time estimates, and contextual tips for new developers.
-- [`ScanReport`](core) - Aggregates scan outcomes including kept candidates, oversized/binary drops, and skipped directories.
-- [`WikiData`](core) - Top-level schema for the final generated wiki, aggregating overview, modules, architecture, and reading guides.
+- [`ArchitectureDiagram`](core) - Structured representation of system design including components, sequence flows, and Mermaid diagram definitions.
+- [`Config`](core) - Runtime settings container holding API keys, base URLs, model selection, concurrency limits, and file processing thresholds.
+- [`ConfigFile`](core) - Disk-persisted format for configuration, containing only essential fields like model, api_key, api_base, and language.
+- [`IndexedFile`](core) - Parsed representation of a single source file containing metrics, symbols, imports, exports, and content hash.
+- [`IndexedSymbol`](core) - Detailed breakdown of individual code elements including visibility, parameters, return types, decorators, and call targets.
+- [`ProjectContext`](core) - Holds repository root, name, and aggregated file tree used to drive LLM context windows.
+- [`ProjectIndex`](core) - Aggregated view containing all modules, call graph edges, and global symbol index for cross-file analysis.
+- [`ReadingGuide`](core) - Curated step-by-step onboarding plan with time estimates and file references for new developers.
+- [`ScanReport`](core) - Categorizes discovered files by size, type, priority, and filtering status during initial traversal.
+- [`WikiData`](core) - Final assembled documentation payload composing overview, modules, architecture, and reading guide into a unified output.
 
 ### [export](export)
 
-- [`ExportSummary`](export) - Tracks counts of written, kept, and removed files.
-- [`JsonExport`](export) - Root container holding project name, pages, and sidebar data.
-- [`PageEntry`](export) - Represents a single documentation page with metadata and content.
-- [`PageState`](export) - Caches input hashes per page to detect modifications.
-- [`SidebarEntry`](export) - Models navigation nodes with hierarchical children.
-- [`StateFile`](export) - Persists export metadata including model, language, and page states.
+- [`ExportSummary`](export) - Tracks metrics for the export run, including pages written, kept, and removed.
+- [`JsonExport`](export) - Root serialization container holding project metadata, page list, and sidebar tree.
+- [`PageEntry`](export) - Represents an individual wiki page with its ID, title, content, parent relationship, and sort order.
+- [`PageState`](export) - Stores hash signatures of source inputs for a specific page to detect changes.
+- [`SidebarEntry`](export) - Models hierarchical navigation items with recursive child support.
+- [`StateFile`](export) - Persists export metadata and per-page input hashes to enable incremental updates.
 
 ### [graph](graph)
 
-- [`DependencyGraph`](graph) - Wraps a petgraph DiGraph to represent files as nodes and imports as directed edges.
+- [`DependencyGraph`](graph) - Holds the underlying petgraph DiGraph and exposes public APIs for graph analysis, ranking, and visualization export.
 
 ### [llm](llm)
 
-- [`ChatMessage`](llm) - Represents role/content pairs used in conversation history and prompts.
-- [`LLMClient`](llm) - Core client wrapper that holds configuration, tracks cumulative token usage/cost, and dispatches requests.
+- [`ChatMessage`](llm) - Standardized data contract representing role/content pairs for system, user, and assistant messages.
+- [`LLMClient`](llm) - Core wrapper that holds reqwest client state, model configuration, API credentials, and running totals for tokens and cost.
 
 ### [rag](rag)
 
-- [`IndexPayload`](rag) - Serde-compatible DTO wrapping chunks, IDF map, and TF vectors for safe JSON serialization and deserialization.
-- [`SimpleRAG`](rag) - Core orchestrator storing indexed chunks, IDF weights, and TF vectors. Manages indexing, persistence, and query execution.
+- [`Chunk`](rag) - Represents a contiguous block of source code with file location metadata and a relevance score calculated during retrieval.
+- [`ChunkData`](rag) - Lightweight serialization struct containing only file path and line range metadata, excluding transient fields like scores during persistence.
+- [`IndexPayload`](rag) - Internal serialization wrapper that groups chunks, IDF weights, and TF vectors into a single JSON-serializable container.
+- [`SimpleRAG`](rag) - Central stateful engine that holds indexed chunks, IDF weights, and term-frequency vectors for similarity matching.
 
 ### [scanner](scanner)
 
-- [`IgnoreRules`](scanner) - Holds compiled filter patterns used to decide if a path should be skipped.
+- [`IgnoreRules`](scanner) - Holds a collection of glob-style patterns used to filter out unwanted paths.
 
 ### [server](server)
 
-- [`AppState`](server) - Global application state holding the cache and a mutex-protected map of active projects.
-- [`ChatRequest`](server) - Schema for chat queries containing the question and conversation history.
-- [`ProjectInfo`](server) - Response payload reporting scan status, file counts, line counts, and errors.
-- [`ProjectState`](server) - Per-project runtime context storing metadata, wiki instance, RAG index, and progress tracking.
-- [`ScanRequest`](server) - Schema for triggering a new documentation scan with path, URL, language, and model configuration.
+- [`AppState`](server) - Global concurrency-safe container holding the document cache and a HashMap of active ProjectState instances.
+- [`ChatRequest`](server) - Payload for conversational AI queries containing the question and conversation history.
+- [`FileReference`](server) - Structured representation of code snippets linked to documentation, including line ranges and raw text.
+- [`ProjectInfo`](server) - Status and metadata returned after scanning completes, including file counts and error states.
+- [`ProjectState`](server) - Per-project runtime context tracking metadata, generated wiki, RAG index, and scan progress.
+- [`ScanRequest`](server) - Parameters for initiating a documentation scan including path, URL, language, model selection, and API keys.
 
-## Toml_table
-
-### [core](core)
-
-- [`dependencies`](core) - Declares serde and other runtime requirements for the crate.
-
-## Type_alias
+## Type
 
 ### [analyzer](analyzer)
 
-- [`ProgressFn`](analyzer) - Callback signature for reporting incremental analysis progress to CLI or web interfaces.
+- [`ProgressFn`](analyzer) - Callback type signature for reporting analysis progress to callers.

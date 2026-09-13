@@ -1,61 +1,60 @@
 # scanner
 
-> Provides cost-efficient filesystem ingestion by traversing repositories, applying intelligent filtering rules, and classifying files for downstream wiki generation.
+> Traverses and filters local codebases to extract structured file metadata and content for LLM-based documentation generation.
 
-The scanner module serves as the primary ingestion layer for the documentation generator. It recursively walks target directories, applies pattern-based and heuristic filters to discard binaries, build artifacts, minified assets, and sensitive files, and classifies remaining source files by language and architectural role. This pre-processing step drastically reduces the volume of data forwarded to LLMs, lowering token costs while preserving structural context through entrypoint detection and ordered file tree construction. It implements a custom glob matcher to handle ignore rules efficiently and outputs structured metadata compatible with the core indexing pipeline.
+The scanner module walks a repository directory tree to identify, classify, and filter source files before they are passed to the LLM pipeline. It applies heuristic and pattern-based rules to exclude binaries, minified assets, sensitive configurations, build artifacts, and dependency directories. By detecting programming languages, identifying entry points, and sorting files by relevance, it ensures that only high-value, parseable code consumes the LLM context window. The module outputs a sorted list of file metadata and a concatenated file tree string ready for downstream processing.
 
 ## Files
 
 ### `crates/scanner/Cargo.toml`
 
-Defines the scanner crate, declares runtime dependencies (walkdir, tracing, repowiki_core), and sets compilation targets.
+Defines crate metadata and declares runtime dependencies like walkdir and tracing.
 
 ### `crates/scanner/src/ignore_rules.rs`
 
-Implements a custom pattern-matching engine to evaluate whether files or directories should be excluded during traversal.
+Implements pattern-matching logic to determine which files and directories should be excluded from the scan.
 
-- `IgnoreRules` (struct) - Holds compiled filter patterns used to decide if a path should be skipped.
-- `from_root` (method) - Initializes IgnoreRules by loading patterns from a specified directory root.
-- `matches` (method) - Evaluates a relative path and directory flag against stored patterns to return true if the path should be ignored.
-- `glob_match` (function) - Public wrapper that delegates to the inner byte-level glob evaluator.
-- `glob_match_inner` (function) - Low-level recursive parser that matches glob patterns against raw byte slices without allocating intermediate strings.
+- `IgnoreRules` (struct) - Holds a collection of glob-style patterns used to filter out unwanted paths.
+- `from_root` (function) - Constructs an IgnoreRules instance by loading standard exclusion patterns relative to the repository root.
+- `matches` (function) - Evaluates whether a given relative path and directory flag should be skipped based on loaded patterns.
+- `glob_match` (function) - Lightweight custom glob matcher that compares a pattern against a file path without external dependencies.
 
 ### `crates/scanner/src/lib.rs`
 
-Module root that re-exports public symbols from ignore_rules and scan to establish a clean crate boundary.
+Serves as the module entry point, re-exporting public types and functions from submodules.
 
 ### `crates/scanner/src/scan.rs`
 
-Orchestrates directory traversal, file classification, binary/minified detection, and structured tree generation for indexing.
+Orchestrates filesystem traversal, applies classification and filtering rules, and assembles the final scan report.
 
-- `SKIP_DIRS` (constant) - List of directory names automatically excluded from traversal (e.g., node_modules, .git).
-- `SKIP_EXTS` (constant) - File extensions treated as non-source or build artifacts.
-- `SENSITIVE_NAMES` (constant) - Filenames containing secrets or credentials that are always filtered out.
-- `MINIFIED_SOURCE_EXTS` (constant) - Extensions commonly associated with compressed frontend assets.
-- `CODE_LANGS` (constant) - Mapping of file extensions to recognized programming languages.
-- `CONFIG_FILES` (constant) - Names of standard configuration files to prioritize during indexing.
-- `ENTRYPOINT_NAMES` (constant) - Common filenames indicating application entry points or routers.
-- `ENTRYPOINT_DIRS` (constant) - Directory names typically containing main execution logic.
-- `detect_language` (function) - Maps a file path's extension to a human-readable language identifier using CODE_LANGS.
-- `is_binary` (function) - Inspects file headers for magic bytes to determine if a file is binary and should be skipped.
-- `has_skipped_suffix` (function) - Checks if a path ends with any extension in SKIP_EXTS.
+- `SKIP_DIRS` (constant) - Hardcoded list of directory names to exclude (e.g., .git, node_modules, target).
+- `SKIP_EXTS` (constant) - File extensions filtered out to avoid parsing binaries or generated assets.
+- `SENSITIVE_NAMES` (constant) - Filenames containing secrets, credentials, or private keys that must never be scanned.
+- `MINIFIED_SOURCE_EXTS` (constant) - Extensions for compressed frontend bundles that lack readable structure.
+- `CODE_LANGS` (constant) - Supported programming language extensions mapped for detection purposes.
+- `CONFIG_FILES` (constant) - Standard configuration filenames used to identify project setup files.
+- `ENTRYPOINT_NAMES` (constant) - Filenames recognized as application or library entry points.
+- `ENTRYPOINT_DIRS` (constant) - Directory names treated as primary source roots.
+- `lang_map` (function) - Returns a static lookup table mapping file extensions to canonical language identifiers.
+- `detect_language` (function) - Resolves the programming language of a file by checking its extension against lang_map.
+- `is_binary` (function) - Inspects raw file bytes to detect binary formats and prevent them from being parsed as text.
+- `has_skipped_suffix` (function) - Checks if a path ends with an extension defined in SKIP_EXTS.
 - `is_sensitive_name` (function) - Verifies if a filename matches any pattern in SENSITIVE_NAMES.
-- `looks_minified_source` (function) - Applies content heuristics to detect highly compressed or obfuscated source code.
-- `is_entrypoint` (function) - Determines if a path corresponds to a known entrypoint file or directory.
-- `build_file_tree` (function) - Formats a sorted slice of FileInfo objects into a hierarchical string representation for wiki rendering.
-- `scan_directory` (function) - Main entry point that walks a directory tree, applies IgnoreRules and heuristics, collects metadata, and returns a ScanReport.
-- `sort_key` (function) - Generates a tuple priority key to order entrypoints and configurations above regular source files.
+- `looks_minified_source` (function) - Heuristic check to identify compressed JavaScript/TypeScript files that lack readable structure.
+- `is_entrypoint` (function) - Determines if a file matches known root configuration or application startup filenames.
+- `build_file_tree` (function) - Concatenates the contents of filtered FileInfo objects into a single delimited string for LLM context injection.
+- `scan_directory` (function) - Main traversal function that uses WalkDir, applies IgnoreRules, classifies files, and returns a ScanReport.
+- `sort_key` (function) - Generates a sort tuple that prioritizes entry points and sorts remaining files alphabetically for deterministic output.
 
 ## Key Concepts
 
-- **Cost-Aware Filtering**: 
-- **Heuristic Classification**: 
-- **Entrypoint Prioritization**: 
-- **Custom Glob Matching**: 
+- **Noise Reduction**: Filters out binaries, minified code, secrets, and dependency folders to prevent wasting LLM tokens on unparseable or irrelevant content.
+- **Entry Point Prioritization**: Ranks configuration and startup files above general source files to ensure the LLM processes architectural context first.
+- **Deterministic Ordering**: Uses a stable sort key to guarantee consistent file ordering across runs, which improves LLM prompt reliability and caching.
+- **Context Assembly**: Flattens multiple filtered files into a single structured string, optimizing memory usage and token boundaries for downstream AI processing.
 
 ## Internal Relationships
 
-- `crates/scanner/src/scan.rs` → `crates/scanner/src/ignore_rules.rs`: scan.rs instantiates IgnoreRules and calls matches() during WalkDir iteration to prune irrelevant paths before processing.
-- `crates/scanner/src/scan.rs` → `repowiki_core::models`: scan.rs constructs FileInfo and ScanReport structs from repowiki_core to pass structured results to the indexing pipeline.
-- `crates/scanner/src/lib.rs` → `crates/scanner/src/scan.rs`: lib.rs re-exports scan.rs public functions to expose the scanning API to external crates.
-- `crates/scanner/src/lib.rs` → `crates/scanner/src/ignore_rules.rs`: lib.rs re-exports IgnoreRules and its methods for direct use by callers outside the scanner crate.
+- `crates/scanner/src/scan.rs` → `crates/scanner/src/ignore_rules.rs`: scan.rs instantiates IgnoreRules and calls its matches method during WalkDir iteration to prune irrelevant branches early.
+- `crates/scanner/src/scan.rs` → `repowiki_core::models`: Consumes FileInfo and ScanReport structs to format the scanned data into the application's expected domain model.
+- `crates/scanner/src/lib.rs` → `crates/scanner/src/scan.rs`: Re-exports scan_directory and related public APIs so external crates can invoke the scanner directly.

@@ -2,41 +2,39 @@
 
 # RepoWiki
 
-> Rust tool generating structured wiki docs for codebases using indexed LLM analysis.
+> Generates structured wiki documentation for any codebase via CLI or web interface using LLM analysis.
 
-RepoWiki is a Rust rewrite of an original Python project designed to automatically generate comprehensive wiki documentation for software repositories. It operates through a terminal or built-in web server, producing Markdown, HTML, or JSON output without external runtimes or Docker containers.
+RepoWiki is a Rust-based tool that automatically creates detailed documentation for software projects. It scans local directories or GitHub repositories, analyzes the code structure, and produces organized wiki pages covering project overviews, module details, architecture diagrams, and symbol indexes.
 
-The architecture replaces raw source ingestion with a deterministic pre-indexing step that extracts symbols, imports, and dependency graphs. This structured index feeds language models, reducing token consumption by roughly 85 percent per module while keeping descriptions grounded in actual code.
+Unlike the original Python version, this rewrite uses an indexed-analysis architecture. It builds deterministic summaries of symbols, imports, and call graphs before sending data to large language models. This approach reduces token usage by roughly 85 percent per module while maintaining accurate, code-grounded descriptions.
 
-It supports six programming languages, respects .gitignore rules, caches LLM responses in a local SQLite database, and includes auto-generated Mermaid diagrams, PageRank-based reading paths, and cross-linked symbol references.
+The project provides multiple output formats including Markdown, HTML, and GitHub Pages-ready sites. It includes a built-in web server for interactive browsing, a chat interface for asking questions about the codebase, and supports incremental updates to avoid regenerating unchanged pages.
 
 ## Tech Stack
 
 - **Rust** 1.75+ (language)
 - **TypeScript** 6.0.2 (language)
 - **Axum** 0.8 (framework)
-- **Tokio** 1 (runtime)
-- **SQLite** bundled (database)
-- **Vite** 8.0.8 (build_tool)
 - **React** 19.2.5 (library)
+- **Vite** 8.0.8 (build_tool)
+- **SQLite** bundled (database)
 
 ## Key Features
 
-- Indexed analysis cuts LLM token costs by approximately 85 percent
-- Single static binary with zero runtime dependencies
-- Supports Python, JS/TS, Go, Rust, Java, and C/C++
-- Auto-generated Mermaid architecture diagrams and PageRank reading paths
-- Cross-linked symbol pages and relative navigation in exports
-- Incremental re-runs with local SQLite caching
-- CLI and web server interfaces with WebSocket chat support
+- Indexed analysis feeds compact structured summaries to LLMs instead of raw source code.
+- Auto-generated architecture diagrams using Mermaid and PageRank-based reading paths.
+- Cross-linked wiki pages with automatic symbol and file path linking.
+- Global symbol index grouped by kind and module.
+- Incremental re-runs that track page inputs to skip unchanged sections.
+- Support for six programming languages: Python, JS/TS, Go, Rust, Java, C/C++.
+- Multiple export formats: Markdown, JSON, HTML, and GitHub Pages.
 
 ## Getting Started
 
-1. Clone the repository and navigate to the root directory.
-2. Install the Rust toolchain if not already present.
-3. Run cargo build --release to compile the binary.
-4. Set an LLM provider API key via environment variable or repowiki config set api_key.
-5. Execute repowiki scan <path_or_url> to generate documentation.
+1. Clone the repository and navigate into the directory.
+2. Build the release binary using cargo build --release.
+3. Set your LLM API key via environment variable or run repowiki config set api_key <your-key>.
+4. Run repowiki scan ./path-to-project to generate documentation or repowiki serve ./path-to-project to start the web interface.
 
 ## Contents
 
@@ -48,10 +46,10 @@ It supports six programming languages, respects .gitignore rules, caches LLM res
   - [export](export)
   - [root](root)
   - [index](index)
-  - [core](core)
   - [ingest](ingest)
   - [llm](llm)
   - [scanner](scanner)
+  - [core](core)
   - [.github](.github)
   - [analyzer](analyzer)
   - [cache](cache)

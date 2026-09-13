@@ -1,44 +1,44 @@
 # root
 
-> Serves as the project scaffold and configuration hub for the Rust-based wiki documentation generator.
+> Provides project configuration, dependency management, legal licensing, and user documentation for an LLM-powered codebase documentation generator.
 
-Contains all non-code project infrastructure required to initialize, build, and understand the tool. It manages dependency resolution via Cargo, provides environment variable templates for LLM API keys and indexing parameters, enforces version control hygiene, and delivers comprehensive setup and usage instructions in both English and Chinese alongside licensing terms. This module exists to standardize the development workflow, ensure reproducible builds, and guide users through runtime configuration without exposing implementation details.
+This directory serves as the foundational layer of the repository, containing all non-source infrastructure required to build, run, and understand the project. It establishes the Rust build environment, enforces secure development practices through environment templates and git exclusions, and delivers comprehensive user guidance in multiple languages. While it contains no executable logic itself, it orchestrates the project's lifecycle from initialization to deployment.
 
 ## Files
 
 ### `.env.example`
 
-Provides a template for required environment variables such as LLM provider credentials, base URLs, and indexer storage paths.
+Serves as a template for required runtime environment variables, ensuring developers configure LLM API keys, server ports, and feature flags without exposing secrets.
 
 ### `Cargo.toml`
 
-Defines the Rust package metadata, compiler settings, and external dependencies needed for AST parsing, vector indexing, and LLM client integration.
+Defines the Rust package metadata, build profiles, and external dependencies required to compile the CLI and web server binaries.
 
 ### `README.md`
 
-Documents installation steps, configuration requirements, and CLI usage workflows for English-speaking developers.
+Primary user guide detailing installation, configuration, CLI commands, web interface setup, and architectural overview.
 
 ### `.gitignore`
 
-Excludes compiled binaries, cache directories, local environment files, and IDE metadata from version control to maintain repository cleanliness.
+Prevents version control pollution by excluding compiled artifacts, environment files, dependency directories, and IDE configurations.
 
 ### `LICENSE`
 
-Specifies the open-source license terms governing redistribution, modification, and liability limitations for the tool.
+Specifies the open-source license terms governing distribution, modification, and commercial use of the software.
 
 ### `README_CN.md`
 
-Mirrors the English documentation to provide parallel onboarding guidance for Chinese-speaking users and contributors.
+Localized Chinese counterpart to the main README, ensuring accessibility for Mandarin-speaking developers and users.
 
 ## Key Concepts
 
-- **Dependency Management**: Centralized in Cargo.toml to guarantee consistent crate versions and compiler flags across developer machines and CI pipelines.
-- **Environment-Driven Configuration**: Separates sensitive credentials and runtime paths from the codebase using .env templates, enabling secure and flexible deployment.
-- **Internationalization Support**: Dual README files maintain parity for global user onboarding without introducing localization frameworks into the core Rust codebase.
+- **Environment-Driven Configuration**: Separating secrets from code via .env.example ensures secure, reproducible deployments across CLI and web modes.
+- **Rust Package Management**: Cargo.toml centralizes dependency resolution and build configuration, enabling deterministic compilation of the documentation engine.
+- **Multi-Language Documentation**: Maintaining parallel README files reduces onboarding friction for international contributors and users.
 
 ## Internal Relationships
 
-- `Cargo.toml` → `README.md`: Dependencies declared in Cargo.toml must be resolved before the build and run commands documented in README.md can execute successfully.
-- `.env.example` → `Runtime Execution`: Variables defined in the template are loaded at startup to configure LLM authentication and indexer paths, decoupling secrets from source code.
-- `.gitignore` → `Build Artifacts`: Prevents auto-generated output, lock files, and local config overrides from polluting the repository history.
-- `README.md` → `README_CN.md`: Maintained as synchronized documentation tracks to ensure feature parity and consistent user guidance across language regions.
+- `Cargo.toml` → `.env.example`: The application reads environment variables defined in .env.example at runtime, while Cargo.toml manages the dependencies that consume those variables.
+- `README.md` → `README_CN.md`: Parallel documentation files providing identical technical guidance in different languages to support global adoption.
+- `.gitignore` → `.env.example`: .gitignore explicitly excludes .env and other secret files, while .env.example provides the safe template for them.
+- `Cargo.toml` → `README.md`: Cargo.toml declares the project name and version, which are referenced and explained in the README for end-user setup instructions.

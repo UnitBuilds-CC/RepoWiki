@@ -1,51 +1,49 @@
 # llm
 
-> Provides a unified interface for interacting with external LLM APIs while constructing domain-specific prompts for automated codebase documentation generation.
+> Provides a unified abstraction layer for interacting with OpenAI-compatible LLM APIs, handling request routing, streaming, cost tracking, and generating structured prompts for codebase documentation.
 
-The llm module abstracts HTTP communication, request/response parsing, and streaming handling for OpenAI-compatible endpoints. It centralizes prompt engineering for documentation tasks and enforces structured output by extracting JSON from raw LLM responses. This reduces boilerplate across the application, ensures consistent API integration, and supports cost tracking to align with the project's goal of minimizing token expenditure during documentation generation.
+Encapsulates all LLM interactions required to analyze source code and generate wiki documentation. It abstracts HTTP client configuration, API key validation, and model-specific endpoint resolution while enforcing consistent message formatting and response parsing. The module separates transport logic from prompt engineering, allowing downstream components to request structured outputs without managing API details or context assembly. It also implements built-in token and cost accounting to prevent runaway usage during bulk analysis.
 
 ## Files
 
 ### `crates/llm/Cargo.toml`
 
-Defines crate metadata and declares runtime dependencies for HTTP requests, serialization, error handling, and pattern matching.
+Defines crate metadata and runtime dependencies including reqwest for HTTP, serde for serialization, thiserror for error handling, and regex for output parsing.
 
 ### `crates/llm/src/client.rs`
 
-Manages network requests, models API payloads and responses, tracks token usage and costs, and resolves endpoint configurations.
+Implements the HTTP client wrapper for LLM APIs. Manages synchronous completions, server-sent event streaming, dynamic endpoint/model resolution, and cumulative token/cost tracking.
 
-- `LLMError` (enum) - Standardized error type for API failures and parsing issues.
-- `ChatMessage` (struct) - Represents role/content pairs used in conversation history and prompts.
-- `LLMClient` (struct) - Core client wrapper that holds configuration, tracks cumulative token usage/cost, and dispatches requests.
-- `complete` (function) - Sends a prompt sequence and returns a single complete response.
-- `stream` (function) - Sends a prompt sequence and yields an async iterator of response chunks.
-- `resolve_api_base` (function) - Determines the correct endpoint URL based on model and key heuristics.
-- `resolve_model_name` (function) - Normalizes model identifiers to match provider expectations.
+- `LLMClient` (struct) - Core wrapper that holds reqwest client state, model configuration, API credentials, and running totals for tokens and cost.
+- `complete` (method) - Sends a Vec<ChatMessage> to the API and deserializes the full response into a ChatResponse struct.
+- `stream` (method) - Initiates a streaming request, yielding incremental StreamChunk events as the LLM generates tokens.
+- `resolve_api_base` (function) - Normalizes or defaults the API endpoint URL based on the provided model and explicit override.
+- `ChatMessage` (struct) - Standardized data contract representing role/content pairs for system, user, and assistant messages.
 
 ### `crates/llm/src/lib.rs`
 
-Module entry point that re-exports public types and functions from client and prompts submodules.
+Entry point that re-exports public types and functions from client and prompts to expose a clean module API.
 
 ### `crates/llm/src/prompts.rs`
 
-Constructs task-specific prompt templates and parses LLM outputs into structured JSON for downstream consumption.
+Constructs task-specific prompt chains using predefined system instructions and regex-based JSON extraction. Ensures LLM outputs conform to expected schemas for automated parsing.
 
-- `build_overview_prompt` (function) - Generates system and user messages for high-level codebase summarization.
-- `build_module_prompt` (function) - Creates prompts for analyzing individual modules or directories.
-- `build_architecture_prompt` (function) - Constructs prompts focused on cross-module relationships and system design.
-- `build_reading_guide_prompt` (function) - Produces prompts that generate navigational instructions for developers.
-- `extract_json` (function) - Applies regex filtering to isolate valid JSON blocks from raw LLM text.
+- `build_overview_prompt` (function) - Assembles initial context messages using file tree, key files, and language to generate high-level documentation.
+- `build_module_prompt` (function) - Constructs focused prompts for analyzing individual modules or directories.
+- `build_architecture_prompt` (function) - Generates prompts targeting cross-module relationships and system design patterns.
+- `extract_json` (function) - Sanitizes raw LLM text output using regex to isolate and parse valid JSON payloads.
+- `build_chat_prompt` (function) - Formats conversational history and current queries for interactive documentation assistance.
 
 ## Key Concepts
 
-- **Structured Prompt Engineering**: Prompts are generated programmatically with strict language and formatting instructions to ensure predictable, machine-parseable documentation output.
-- **Cost & Usage Tracking**: LLMClient accumulates prompt and completion tokens per request, calculating total session cost to monitor and minimize API spending.
-- **Streaming vs Complete Modes**: Supports both synchronous full-response and asynchronous chunked-streaming calls to handle varying output lengths and latency requirements.
-- **JSON Enforcement**: Raw LLM text is filtered through regex-based extraction to guarantee valid JSON payloads for downstream indexing and wiki generation.
+- **Unified API Abstraction**: Hides provider-specific HTTP quirks behind a consistent LLMClient interface, enabling easy model swapping without refactoring downstream logic.
+- **Deterministic Output Parsing**: Regex-based extract_json sanitizes raw LLM text into valid serde_json::Value, preventing parser failures from markdown wrappers or trailing text.
+- **Cumulative Usage Accounting**: LLMClient tracks input/output tokens and estimated costs across all requests to monitor budget and detect anomalies during bulk codebase scanning.
+- **Context-Aware Prompt Routing**: Separate builder functions map specific documentation tasks to optimized system instructions and message structures, improving output relevance and reducing token waste.
 
 ## Internal Relationships
 
-- `lib.rs` → `client.rs`: Aggregates and re-exports the LLMClient and related types for external use.
-- `lib.rs` → `prompts.rs`: Aggregates and re-exports prompt builders and JSON extraction utilities.
-- `prompts.rs` → `client.rs`: Uses ChatMessage structs to assemble prompt sequences that are passed directly to LLMClient methods.
-- `client.rs` → `External LLM APIs`: Dispatches HTTP POST requests with serialized prompts and consumes streaming or complete JSON responses.
+- `prompts.rs` → `client.rs`: Prompt builders return Vec<ChatMessage> which are directly consumed by LLMClient::complete and LLMClient::stream for execution.
+- `lib.rs` → `client.rs`: Aggregates internal modules and exposes them as a single public namespace for downstream crates.
+- `lib.rs` → `prompts.rs`: Exports prompt construction utilities alongside the client wrapper to provide a complete LLM interaction surface.
+- `External callers` → `llm module`: Documentation generators invoke prompt builders to assemble context, then pass them to LLMClient to fetch structured analysis.
