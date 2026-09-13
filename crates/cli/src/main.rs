@@ -57,6 +57,9 @@ enum Commands {
         /// Write GitHub Pages loader (index.html + .nojekyll)
         #[arg(long)]
         site: bool,
+        /// Strip .md extensions from links for GitHub Wiki compatibility
+        #[arg(long)]
+        github_wiki: bool,
     },
     /// Start the RepoWiki web interface
     Serve {
@@ -137,9 +140,10 @@ async fn main() -> Result<()> {
             open,
             full,
             site,
+            github_wiki,
         } => {
             cmd_scan(
-                &path_or_url, output, format, lang, model, open, full, site, &term,
+                &path_or_url, output, format, lang, model, open, full, site, github_wiki, &term,
             )
             .await?
         }
@@ -251,6 +255,7 @@ async fn cmd_scan(
     open_browser: bool,
     full: bool,
     site: bool,
+    github_wiki: bool,
     term: &Term,
 ) -> Result<()> {
     let mut cfg = Config::load();
@@ -311,7 +316,7 @@ async fn cmd_scan(
         return Ok(());
     }
 
-    run_analysis(&project, &cfg, format, open_browser, site, full, term).await
+    run_analysis(&project, &cfg, format, open_browser, site, full, github_wiki, term).await
 }
 
 async fn run_analysis(
@@ -321,6 +326,7 @@ async fn run_analysis(
     open_browser: bool,
     site: bool,
     full: bool,
+    github_wiki: bool,
     term: &Term,
 ) -> Result<()> {
     use repowiki_analyzer::Analyzer;
@@ -353,6 +359,7 @@ async fn run_analysis(
                 &cfg.model,
                 &cfg.language,
                 full,
+                github_wiki,
             );
             if let Some(ref s) = summary {
                 if !s.kept.is_empty() || !s.removed.is_empty() {

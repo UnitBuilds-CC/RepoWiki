@@ -54,6 +54,7 @@ pub fn export_markdown(
     model: &str,
     language: &str,
     full: bool,
+    github_wiki: bool,
 ) -> Option<ExportSummary> {
     std::fs::create_dir_all(output_dir).ok()?;
 
@@ -87,7 +88,12 @@ pub fn export_markdown(
         if let Some(parent) = page_path.parent() {
             std::fs::create_dir_all(parent).ok();
         }
-        std::fs::write(&page_path, &page.content).ok();
+        let content = if github_wiki {
+            strip_md_from_internal_links(&page.content)
+        } else {
+            page.content.clone()
+        };
+        std::fs::write(&page_path, &content).ok();
         summary.written.push(page.id.clone());
     }
 
@@ -105,8 +111,8 @@ pub fn export_markdown(
         }
     }
 
-    write_if_changed(&output_dir.join("_sidebar.md"), &sidebar_text(wiki));
-    write_if_changed(&output_dir.join("README.md"), &readme_text(wiki));
+    write_if_changed(&output_dir.join("_sidebar.md"), &sidebar_text(wiki, github_wiki));
+    write_if_changed(&output_dir.join("README.md"), &readme_text(wiki, github_wiki));
 
     if incremental {
         let new_state = StateFile {
@@ -143,22 +149,24 @@ fn write_if_changed(path: &Path, content: &str) {
     std::fs::write(path, content).ok();
 }
 
-fn sidebar_text(wiki: &Wiki) -> String {
+fn sidebar_text(wiki: &Wiki, github_wiki: bool) -> String {
+    let ext = if github_wiki { "" } else { ".md" };
     let mut lines = vec![format!("# {}\n", wiki.project_name)];
     for item in &wiki.sidebar {
         if !item.page_id.is_empty() {
-            lines.push(format!("- [{}]({}.md)", item.title, item.page_id));
+            lines.push(format!("- [{}]({}{})", item.title, item.page_id, ext));
         } else {
             lines.push(format!("- **{}**", item.title));
         }
         for child in &item.children {
-            lines.push(format!("  - [{}]({}.md)", child.title, child.page_id));
+            lines.push(format!("  - [{}]({}{})", child.title, child.page_id, ext));
         }
     }
     lines.join("\n") + "\n"
 }
 
-fn readme_text(wiki: &Wiki) -> String {
+fn readme_text(wiki: &Wiki, github_wiki: bool) -> String {
+    let ext = if github_wiki { "" } else { ".md" };
     let mut lines = vec![format!("# {}\n", wiki.project_name)];
     if let Some(overview) = wiki.get_page("index") {
         let trimmed = overview.content.trim();
@@ -170,13 +178,29 @@ fn readme_text(wiki: &Wiki) -> String {
     lines.push("## Contents\n".into());
     for item in &wiki.sidebar {
         if !item.page_id.is_empty() {
-            lines.push(format!("- [{}]({}.md)", item.title, item.page_id));
+            lines.push(format!("- [{}]({}{})", item.title, item.page_id, ext));
         } else {
             lines.push(format!("- **{}**", item.title));
         }
         for child in &item.children {
-            lines.push(format!("  - [{}]({}.md)", child.title, child.page_id));
+            lines.push(format!("  - [{}]({}{})", child.title, child.page_id, ext));
         }
     }
     lines.join("\n") + "\n"
+}
+
+fn strip_md_from_internal_links(content: &str) -> String {
+    let link_re = regex::Regex::new(r"\[([^\]]*)\]\(([^)]+\.md)\)").unwrap();
+    link_re
+        .replace_all(content, |caps: &regex::Captures| {
+            let label = &caps[1];
+            let url = &caps[2];
+            if url.contains("://") {
+                caps[0].to_string()
+            } else {
+                let stripped = url.strip_suffix(".md").unwrap_or(url);
+                format!("[{}]({})", label, stripped)
+            }
+        })
+        .into_owned()
 }
