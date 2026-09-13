@@ -84,13 +84,13 @@ impl WikiBuilder {
             ..Default::default()
         };
         for (i, mod_doc) in wiki_data.modules.iter().enumerate() {
-            let mod_id = format!("modules/{}", mod_doc.name);
+            let mod_id = mod_doc.name.clone();
             let mod_md = build_module_page(mod_doc);
             pages.push(WikiPage {
                 id: mod_id.clone(),
                 title: mod_doc.name.clone(),
                 content: mod_md,
-                parent_id: "modules".into(),
+                parent_id: String::new(),
                 order: i as i32,
             });
             module_sidebar.children.push(SidebarItem {
@@ -165,8 +165,10 @@ impl WikiBuilder {
 fn link_pages(pages: &mut [WikiPage], wiki_data: &WikiData) {
     let mut symbols_raw: HashMap<String, Option<String>> = HashMap::new();
     let mut files_raw: HashMap<String, Option<String>> = HashMap::new();
+    let mut module_page_ids: std::collections::HashSet<String> = std::collections::HashSet::new();
     for mod_doc in &wiki_data.modules {
-        let page_id = format!("modules/{}", mod_doc.name);
+        let page_id = mod_doc.name.clone();
+        module_page_ids.insert(page_id.clone());
         for f in &mod_doc.files {
             match files_raw.get_mut(&f.path) {
                 Some(slot) => *slot = None,
@@ -191,7 +193,7 @@ fn link_pages(pages: &mut [WikiPage], wiki_data: &WikiData) {
     }
     for page in pages.iter_mut() {
         page.content = apply_cross_links(&page.content, &page.id, &symbols, &files);
-        if page.id.starts_with("modules/") {
+        if module_page_ids.contains(&page.id) {
             page.content = strip_relationship_links(&page.content);
         }
     }
@@ -280,7 +282,7 @@ fn build_architecture_page(arch: &ArchitectureDiagram, module_names: &std::colle
                 lines.push(format!("{}\n", c.purpose));
             }
             if !c.files.is_empty() {
-                let page_id = format!("modules/{}", c.name);
+                let page_id = c.name.clone();
                 let has_module = module_names.contains(&c.name);
                 let files: Vec<String> = c.files.iter().map(|f| {
                     if has_module {
@@ -398,7 +400,7 @@ fn build_symbol_index_page(wiki_data: &WikiData) -> String {
         let mut mod_names: Vec<&String> = modules.keys().collect();
         mod_names.sort();
         for mod_name in mod_names {
-            let href = rel_href("symbols", &format!("modules/{}", mod_name));
+            let href = rel_href("symbols", mod_name);
             lines.push(format!("### [{}]({})\n", mod_name, href));
 
             let bucket = &modules[mod_name];

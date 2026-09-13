@@ -1,45 +1,59 @@
 # Reading Guide
 
-Approach this codebase by tracing the data flow from configuration through backend analysis pipelines to the frontend interface. Start with project setup to understand dependencies and environment requirements, then move to entry points to see how execution begins. Next, examine core logic modules to grasp data modeling and analysis algorithms, followed by utility and integration layers like caching and exports. Finally, review the frontend to understand how state and API responses are rendered into interactive views.
+This codebase separates a Rust-based backend engine from a TypeScript frontend. Navigate it by starting with configuration and entry points to grasp the build/runtime setup, then trace the data flow through the core indexing and LLM orchestration modules, and finally examine the frontend views and export pipeline. Focus on how cost-optimization strategies (caching, graph prioritization, RAG) thread through the entire stack and how state flows between the global store and UI components.
 
-## Step 1: Foundation & Configuration (~5 min)
+## Step 1: Configuration & Project Scaffold (~5 min)
 
-**Files:** [`.env.example`](modules/root.md), [`Cargo.toml`](modules/root.md), [`README.md`](modules/root.md)
+**Files:** [`.env.example`](root), [`Cargo.toml`](root), [`README.md`](root), [`crates/analyzer/Cargo.toml`](analyzer), [`crates/core/Cargo.toml`](core)
 
-Identify required environment variables, dependency versions, and workspace structure. Look for how the Rust monorepo organizes crates, note the documented initialization workflow, and understand the baseline assumptions for building and running the system.
+Identify required environment variables, workspace organization, and dependency versions. Look for how the Rust crates are partitioned, feature flags, build profiles, and how the CLI versus server binaries are configured to understand the project's operational boundaries and startup requirements.
 
-## Step 2: Entry Points & Application Bootstrapping (~5 min)
+## Step 2: Frontend Entry Point & Global State (~5 min)
 
-**Files:** [`frontend/src/App.tsx`](modules/frontend.md), [`crates/cli/Cargo.toml`](modules/cli.md)
+**Files:** [`frontend/src/App.tsx`](frontend), [`frontend/src/stores/wiki.ts`](frontend)
 
-Trace how the web application initializes routes and mounts root components. Examine the CLI crate configuration to understand terminal command routing, argument parsing, and how user input is dispatched to backend analysis pipelines.
+Trace how the application initializes, sets up routing, and mounts root components. Examine the global store structure to understand how wiki data, chat history, and UI state are persisted, synchronized, and consumed across different views before diving into individual pages.
 
-## Step 3: Core Data Models & Structural Analysis (~10 min)
+## Step 3: API Abstraction & Client Contract (~5 min)
 
-**Files:** [`crates/core/Cargo.toml`](modules/core.md), [`crates/graph/Cargo.toml`](modules/graph.md), [`crates/index/Cargo.toml`](modules/index.md)
+**Files:** [`frontend/src/lib/api.ts`](frontend)
 
-Review strongly-typed structs and enums used for project scanning and indexing. Look for how the graph module traverses repositories to prioritize documentation targets, and examine how the index module parses source code into structured metadata for efficient LLM context retrieval.
+Analyze how the frontend abstracts HTTP requests, handles headers/authentication, manages error responses, and maps to backend endpoints. This file defines the communication contract between the UI and the Rust server, making it critical for debugging integration issues and understanding request lifecycle.
 
-## Step 4: LLM Orchestration, Caching & Export (~10 min)
+## Step 4: Core Indexing & Source Ingestion Pipeline (~15 min)
 
-**Files:** [`crates/analyzer/Cargo.toml`](modules/analyzer.md), [`crates/cache/Cargo.toml`](modules/cache.md), `crates/export/Cargo.toml`
+**Files:** `crates/core/`, `crates/index/`, `crates/scanner/`, `crates/ingest/`
 
-Analyze how domain-specific prompts are constructed and routed to external APIs. Look for TTL-managed cache invalidation policies that prevent redundant processing, and examine incremental write optimizations used to generate Markdown, JSON, and HTML documentation outputs.
+Follow the data flow from raw repository cloning or local directory scanning to structured metadata extraction. Look for intelligent filtering rules, language detection, AST/parsing strategies, and how source files are normalized before being passed downstream for analysis.
 
-## Step 5: Frontend API Layer & Global State (~10 min)
+## Step 5: LLM Orchestration & Cost Optimization (~20 min)
 
-**Files:** [`frontend/src/lib/api.ts`](modules/frontend.md), [`frontend/src/stores/wiki.ts`](modules/frontend.md)
+**Files:** `crates/llm/`, `crates/analyzer/`, `crates/cache/`, `crates/graph/`, `crates/rag/`
 
-Inspect HTTP request wrappers, error handling, and streaming progress tracking mechanisms. Study the reactive state store to see how wiki data, scan status, and chat history are synchronized, persisted, and consumed by UI components.
+Study how prompts are constructed, how external LLM APIs are abstracted, and how token consumption is minimized. Pay close attention to the caching TTL strategy, graph-based prioritization for documentation targets, and the deterministic retrieval pipeline that feeds only relevant snippets to the model.
 
-## Step 6: Interactive UI & Documentation Rendering (~15 min)
+## Step 6: Server API & CLI Interface (~10 min)
 
-**Files:** [`frontend/src/pages/Home.tsx`](modules/frontend.md), [`frontend/src/pages/ChatView.tsx`](modules/frontend.md), [`frontend/src/pages/WikiView.tsx`](modules/frontend.md), [`frontend/src/components/MermaidDiagram.tsx`](modules/frontend.md), [`frontend/src/components/WikiContent.tsx`](modules/frontend.md), [`frontend/src/components/WikiSidebar.tsx`](modules/frontend.md), [`frontend/src/components/SettingsModal.tsx`](modules/frontend.md)
+**Files:** `crates/server/`, `crates/cli/`
 
-Map the user journey from the home dashboard to active chat sessions and wiki browsing. Focus on how Mermaid diagrams are dynamically rendered, how wiki content is parsed and displayed, sidebar navigation logic, and how settings modal state interacts with the global store.
+Map out HTTP endpoints, request/response schemas, and streaming progress mechanisms for the web interface. For the CLI, identify command structures, argument parsing, and how users trigger scans or interact with the chat assistant locally.
+
+## Step 7: Frontend Views & Interactive Components (~15 min)
+
+**Files:** [`frontend/src/pages/Home.tsx`](frontend), [`frontend/src/pages/WikiView.tsx`](frontend), [`frontend/src/pages/ChatView.tsx`](frontend), [`frontend/src/components/WikiContent.tsx`](frontend), [`frontend/src/components/WikiSidebar.tsx`](frontend), [`frontend/src/components/MermaidDiagram.tsx`](frontend), [`frontend/src/components/SettingsModal.tsx`](frontend)
+
+Observe how pages compose shared components, handle user interactions like chat queries and wiki navigation, render Mermaid diagrams, and manage modal states. Note how state from the global store flows down to these presentational components and how side effects are triggered.
+
+## Step 8: Static Export & Documentation Distribution (~10 min)
+
+**Files:** `crates/export/`
+
+Review how internally analyzed wiki structures are transformed into static output formats. Look for template engines, asset bundling logic, and how the final documentation package is assembled and optimized for distribution or hosting.
 
 ## Tips
 
-- Follow the data flow: start with how raw source code enters the scanner, moves through indexing, gets processed by the analyzer, and finally surfaces in the frontend store.
-- Use the PageRank rankings as a priority guide; higher-ranked files typically handle more cross-cutting concerns or critical paths in the application.
-- When debugging LLM-related issues, trace the prompt construction in the analyzer module alongside the cache TTL settings to identify redundancy or context window limits.
+- Use your IDE's Find Usages or Go to Definition to trace cross-crate dependencies, especially around the strongly-typed data models in the core module.
+- Check the .github/workflows directory early to understand CI/CD pipelines, testing strategies, and deployment gates before making changes.
+- The frontend heavily relies on api.ts for all backend communication; consider mocking its responses to isolate and test UI components independently.
+- Token cost optimization is a first-class architectural concern; track how cache, graph, and rag modules collaborate to reduce redundant LLM processing during development.
+- Run the CLI in dry-run or verbose mode when experimenting with the scanner and indexer to observe file classification and context window boundaries without triggering full LLM calls.

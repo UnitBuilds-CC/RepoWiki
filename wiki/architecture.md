@@ -2,185 +2,162 @@
 
 **Type:** client-server
 
-The system implements a client-server architecture where a Rust-based backend exposes both a CLI and an HTTP API, while a React frontend delivers the interactive documentation browser. Core processing follows a deterministic pipeline that ingests repositories, scans files, builds dependency graphs, indexes symbols, and leverages an LLM with RAG to generate structured wiki content. Results are cached and exported as static sites or served dynamically via the backend.
+The system follows a client-server architecture built on a modular Rust workspace. A React frontend communicates with an Axum-based API server, which orchestrates a deterministic data processing pipeline for codebase analysis. The same backend powers both a terminal CLI and a web interface, enabling flexible interaction patterns while sharing core libraries.
 
 ## Component Diagram
 
 ```mermaid
 graph TD
-  root[Root] --> cli[CLI]
-  root --> server[Server]
-  root --> frontend[Frontend]
-  root --> github_actions[GitHub Actions]
-  cli --> ingest[Ingest]
-  cli --> scanner[Scanner]
-  cli --> graph[Graph]
-  cli --> cache[Cache]
-  cli --> llm[LLM]
-  cli --> rag[RAG]
-  cli --> index[Index]
-  cli --> analyzer[Analyzer]
-  cli --> export[Export]
-  server --> ingest
-  server --> scanner
-  server --> graph
-  server --> cache
-  server --> llm
-  server --> rag
-  server --> analyzer
-  server --> export
-  frontend --> server
-  analyzer --> llm
-  analyzer --> rag
-  analyzer --> index
-  analyzer --> graph
-  analyzer --> cache
-  index --> graph
-  index --> cache
-  ingest --> scanner
-  scanner --> core[Core]
-  graph --> core
-  cache --> core
-  llm --> core
-  rag --> core
-  index --> core
-  analyzer --> core
-  export --> core
+  CLI[CLI] --> SERVER[Server]
+  CLI --> INGEST[Ingest]
+  CLI --> SCANNER[Scanner]
+  INGEST --> SCANNER
+  SCANNER --> GRAPH[Graph]
+  GRAPH --> INDEX[Index]
+  INDEX --> ANALYZER[Analyzer]
+  ANALYZER --> LLM[LLM]
+  ANALYZER --> CACHE[Cache]
+  ANALYZER --> RAG[RAG]
+  ANALYZER --> EXPORT[Export]
+  CORE[Core] --> CLI
+  CORE --> SERVER
+  CORE --> INGEST
+  CORE --> SCANNER
+  CORE --> GRAPH
+  CORE --> INDEX
+  CORE --> ANALYZER
+  CORE --> LLM
+  CORE --> CACHE
+  CORE --> RAG
+  CORE --> EXPORT
+  SERVER --> FRONTEND[Frontend]
+  FRONTEND --> SERVER
+  ROOT[Root] --> CLI
+  ROOT --> SERVER
+  GITHUB[Github] --> ROOT
 ```
 
 ## Components
 
 ### frontend
 
-React-based SPA providing the interactive wiki browser, chat interface, and settings modal.
+React-based web interface for viewing wikis, chatting, and rendering diagrams.
 
-Files: [`frontend/package.json`](modules/frontend.md), [`frontend/tsconfig.json`](modules/frontend.md), [`frontend/vite.config.ts`](modules/frontend.md), [`frontend/src/App.tsx`](modules/frontend.md), [`frontend/index.html`](modules/frontend.md), [`frontend/package-lock.json`](modules/frontend.md), [`frontend/src/components/MermaidDiagram.tsx`](modules/frontend.md), [`frontend/src/components/SettingsModal.tsx`](modules/frontend.md), [`frontend/src/components/WikiContent.tsx`](modules/frontend.md), [`frontend/src/components/WikiSidebar.tsx`](modules/frontend.md), [`frontend/src/index.css`](modules/frontend.md), [`frontend/src/lib/api.ts`](modules/frontend.md), [`frontend/src/main.tsx`](modules/frontend.md), [`frontend/src/pages/ChatView.tsx`](modules/frontend.md), [`frontend/src/pages/Home.tsx`](modules/frontend.md), [`frontend/src/pages/WikiView.tsx`](modules/frontend.md), [`frontend/src/stores/wiki.ts`](modules/frontend.md), [`frontend/src/vite-env.d.ts`](modules/frontend.md)
+Files: [`frontend/package.json`](frontend), [`frontend/tsconfig.json`](frontend), [`frontend/vite.config.ts`](frontend), [`frontend/src/App.tsx`](frontend), [`frontend/index.html`](frontend), [`frontend/package-lock.json`](frontend), [`frontend/src/components/MermaidDiagram.tsx`](frontend), [`frontend/src/components/SettingsModal.tsx`](frontend), [`frontend/src/components/WikiContent.tsx`](frontend), [`frontend/src/components/WikiSidebar.tsx`](frontend), [`frontend/src/index.css`](frontend), [`frontend/src/lib/api.ts`](frontend), [`frontend/src/main.tsx`](frontend), [`frontend/src/pages/ChatView.tsx`](frontend), [`frontend/src/pages/Home.tsx`](frontend), [`frontend/src/pages/WikiView.tsx`](frontend), [`frontend/src/stores/wiki.ts`](frontend), [`frontend/src/vite-env.d.ts`](frontend)
 
 ### server
 
-Axum-based HTTP service exposing REST/WebSocket endpoints for scanning, chatting, and wiki retrieval.
+Axum HTTP and WebSocket server providing REST APIs and serving the static frontend.
 
-Files: [`crates/server/Cargo.toml`](modules/server.md), [`crates/server/src/lib.rs`](modules/server.md), [`crates/server/src/models.rs`](modules/server.md), [`crates/server/src/routers/chat.rs`](modules/server.md), [`crates/server/src/routers/mod.rs`](modules/server.md), [`crates/server/src/routers/scan.rs`](modules/server.md), [`crates/server/src/routers/wiki.rs`](modules/server.md)
+Files: [`crates/server/Cargo.toml`](server), [`crates/server/src/lib.rs`](server), [`crates/server/src/models.rs`](server), [`crates/server/src/routers/chat.rs`](server), [`crates/server/src/routers/mod.rs`](server), [`crates/server/src/routers/scan.rs`](server), [`crates/server/src/routers/wiki.rs`](server)
 
 ### export
 
-Generates static wiki output in Markdown, HTML, and JSON formats with cross-linking support.
+Formats analyzed wiki data into HTML, JSON, or Markdown outputs.
 
-Files: [`crates/export/Cargo.toml`](modules/export.md), [`crates/export/src/html.rs`](modules/export.md), [`crates/export/src/json_export.rs`](modules/export.md), [`crates/export/src/lib.rs`](modules/export.md), [`crates/export/src/markdown.rs`](modules/export.md), [`crates/export/src/site.rs`](modules/export.md)
+Files: [`crates/export/Cargo.toml`](export), [`crates/export/src/html.rs`](export), [`crates/export/src/json_export.rs`](export), [`crates/export/src/lib.rs`](export), [`crates/export/src/markdown.rs`](export), [`crates/export/src/site.rs`](export)
 
 ### root
 
-Project root containing configuration, metadata, licensing, and environment templates.
+Project root containing workspace configuration, documentation, and environment templates.
 
-Files: [`.env.example`](modules/root.md), [`Cargo.toml`](modules/root.md), [`README.md`](modules/root.md), [`.gitignore`](modules/root.md), [`LICENSE`](modules/root.md), [`README_CN.md`](modules/root.md)
+Files: [`.env.example`](root), [`Cargo.toml`](root), [`README.md`](root), [`.gitignore`](root), [`LICENSE`](root), [`README_CN.md`](root)
 
 ### index
 
-Extracts code symbols, computes complexity metrics, and resolves language-specific imports.
+Builds symbol indexes, computes complexity metrics, and resolves cross-file imports.
 
-Files: [`crates/index/Cargo.toml`](modules/index.md), [`crates/index/src/extract.rs`](modules/index.md), [`crates/index/src/flow.rs`](modules/index.md), [`crates/index/src/lib.rs`](modules/index.md), [`crates/index/src/resolve.rs`](modules/index.md)
+Files: [`crates/index/Cargo.toml`](index), [`crates/index/src/extract.rs`](index), [`crates/index/src/flow.rs`](index), [`crates/index/src/lib.rs`](index), [`crates/index/src/resolve.rs`](index)
 
 ### core
 
-Shared foundation providing configuration parsing, common data models, and utility functions.
+Shared configuration management, model resolution, and foundational type definitions.
 
-Files: [`crates/core/Cargo.toml`](modules/core.md), [`crates/core/src/config.rs`](modules/core.md), [`crates/core/src/lib.rs`](modules/core.md), [`crates/core/src/models.rs`](modules/core.md)
+Files: [`crates/core/Cargo.toml`](core), [`crates/core/src/config.rs`](core), [`crates/core/src/lib.rs`](core), [`crates/core/src/models.rs`](core)
 
 ### ingest
 
-Handles repository acquisition by cloning local directories or remote Git URLs securely.
+Handles repository cloning and URL parsing for GitHub and local filesystem sources.
 
-Files: [`crates/ingest/Cargo.toml`](modules/ingest.md), [`crates/ingest/src/github.rs`](modules/ingest.md), [`crates/ingest/src/lib.rs`](modules/ingest.md), [`crates/ingest/src/local.rs`](modules/ingest.md)
+Files: [`crates/ingest/Cargo.toml`](ingest), [`crates/ingest/src/github.rs`](ingest), [`crates/ingest/src/lib.rs`](ingest), [`crates/ingest/src/local.rs`](ingest)
 
 ### llm
 
-Abstraction layer for interacting with external LLM providers, managing prompts and chat messages.
+Manages communication with external LLM providers, handling prompts, messages, and responses.
 
-Files: [`crates/llm/Cargo.toml`](modules/llm.md), [`crates/llm/src/client.rs`](modules/llm.md), [`crates/llm/src/lib.rs`](modules/llm.md), [`crates/llm/src/prompts.rs`](modules/llm.md)
+Files: [`crates/llm/Cargo.toml`](llm), [`crates/llm/src/client.rs`](llm), [`crates/llm/src/lib.rs`](llm), [`crates/llm/src/prompts.rs`](llm)
 
 ### scanner
 
-Performs filesystem traversal while respecting ignore rules and filtering sensitive files.
+Traverses directory trees, applies ignore patterns, and identifies target source files.
 
-Files: [`crates/scanner/Cargo.toml`](modules/scanner.md), [`crates/scanner/src/ignore_rules.rs`](modules/scanner.md), [`crates/scanner/src/lib.rs`](modules/scanner.md), [`crates/scanner/src/scan.rs`](modules/scanner.md)
+Files: [`crates/scanner/Cargo.toml`](scanner), [`crates/scanner/src/ignore_rules.rs`](scanner), [`crates/scanner/src/lib.rs`](scanner), [`crates/scanner/src/scan.rs`](scanner)
 
-### .github
+### github
 
-Automated CI/CD workflows for continuous integration and package publishing.
+CI/CD workflows for continuous integration testing and package publishing.
 
-Files: [`.github/workflows/ci.yml`](modules/.github.md), [`.github/workflows/publish.yml`](modules/.github.md)
+Files: [`.github/workflows/ci.yml`](.github), [`.github/workflows/publish.yml`](.github)
 
 ### analyzer
 
-Orchestrates the LLM-driven analysis phase by combining indexed data with RAG context.
+Orchestrates the analysis pipeline, tracks progress, generates overviews, and coordinates LLM requests.
 
-Files: [`crates/analyzer/Cargo.toml`](modules/analyzer.md), [`crates/analyzer/src/lib.rs`](modules/analyzer.md)
+Files: [`crates/analyzer/Cargo.toml`](analyzer), [`crates/analyzer/src/lib.rs`](analyzer)
 
 ### cache
 
-SQLite-backed storage for caching LLM responses, content hashes, and incremental state.
+Provides persistent SQLite-based caching for LLM results and computed metrics.
 
-Files: [`crates/cache/Cargo.toml`](modules/cache.md), [`crates/cache/src/lib.rs`](modules/cache.md)
+Files: [`crates/cache/Cargo.toml`](cache), [`crates/cache/src/lib.rs`](cache)
 
 ### cli
 
-Command-line interface entry point handling user commands, argument parsing, and orchestration.
+Command-line interface entry point that parses arguments and dispatches scan, serve, and chat commands.
 
-Files: [`crates/cli/Cargo.toml`](modules/cli.md), [`crates/cli/src/main.rs`](modules/cli.md)
+Files: [`crates/cli/Cargo.toml`](cli), [`crates/cli/src/main.rs`](cli)
 
 ### graph
 
-Constructs dependency graphs from imports and ranks files using PageRank algorithms.
+Constructs dependency graphs using PageRank ranking and maps module relationships.
 
-Files: [`crates/graph/Cargo.toml`](modules/graph.md), [`crates/graph/src/lib.rs`](modules/graph.md)
+Files: [`crates/graph/Cargo.toml`](graph), [`crates/graph/src/lib.rs`](graph)
 
 ### rag
 
-Implements Retrieval-Augmented Generation chunking, fingerprinting, and context retrieval.
+Implements Retrieval-Augmented Generation indexing and chunking for efficient context retrieval.
 
-Files: [`crates/rag/Cargo.toml`](modules/rag.md), [`crates/rag/src/lib.rs`](modules/rag.md)
+Files: [`crates/rag/Cargo.toml`](rag), [`crates/rag/src/lib.rs`](rag)
 
 ## Sequence Diagram
 
 ```mermaid
 sequenceDiagram
-  participant U as User
-  participant C as CLI
-  participant S as Server
-  participant I as Ingest
-  participant Sc as Scanner
-  participant G as Graph
-  participant Id as Index
-  participant A as Analyzer
-  participant L as LLM
-  participant Ca as Cache
-  participant E as Export
-  participant F as Frontend
-  U->>C: trigger scan
-  C->>S: start serve/scan
-  S->>I: clone repository
-  I-->>S: return project path
-  S->>Sc: scan directory
-  Sc-->>S: return file list
-  S->>G: build dependency graph
-  G-->>S: return ranked files
-  S->>Id: extract symbols & imports
-  Id-->>S: return index data
-  S->>A: analyze module
-  A->>Ca: check cache
-  Ca-->>A: hit/miss
-  alt cache miss
-    A->>L: request analysis with RAG context
-    L-->>A: return generated wiki content
-    A->>Ca: store result
-  end
-  A-->>S: return analyzed content
-  S->>E: generate final wiki
-  E-->>S: return formatted output
-  S-->>F: serve wiki pages
-  F-->>U: display documentation
+  participant User
+  participant CLI
+  participant Server
+  participant Ingest
+  participant Scanner
+  participant Graph
+  participant Index
+  participant Analyzer
+  participant LLM
+  participant Cache
+  participant Export
+  User->>CLI: execute scan command
+  CLI->>Server: load project context
+  Server->>Ingest: clone repository
+  Ingest->>Scanner: scan file tree
+  Scanner->>Graph: build dependency graph
+  Graph->>Index: extract symbols and resolve imports
+  Index->>Analyzer: compute metrics and generate overview
+  Analyzer->>LLM: send structured index for analysis
+  LLM-->>Analyzer: return wiki content
+  Analyzer->>Cache: persist analysis results
+  Analyzer->>Export: format output
+  Export-->>User: deliver wiki documentation
 ```
 
 ## Data Flow
 
-Data flows from repository ingestion through a multi-stage analysis pipeline: scanning identifies source files, graphing maps dependencies, and indexing extracts symbols. The analyzer then queries the LLM using retrieved context chunks, caches the responses, and finally exports the structured markdown or HTML wiki. The server streams this output to the frontend for interactive browsing and chat.
+Repository data flows through a deterministic pipeline starting with ingestion and file scanning. The scanner feeds filtered paths to the graph builder, which maps dependencies before the indexer extracts symbols and resolves imports. These compact summaries are passed to the analyzer, which orchestrates LLM calls using cached results and RAG context, finally delivering structured content to the exporter for final formatting.
