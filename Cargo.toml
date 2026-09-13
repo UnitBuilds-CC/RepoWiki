@@ -25,18 +25,18 @@ repository = "https://github.com/UnitBuilds-CC/RepoWiki"
 homepage = "https://github.com/UnitBuilds-CC/RepoWiki"
 
 [workspace.dependencies]
-repowiki-core = { path = "crates/core" }
-repowiki-scanner = { path = "crates/scanner" }
-repowiki-graph = { path = "crates/graph" }
-repowiki-cache = { path = "crates/cache" }
-repowiki-llm = { path = "crates/llm" }
-repowiki-rag = { path = "crates/rag" }
-repowiki-index = { path = "crates/index" }
-repowiki-analyzer = { path = "crates/analyzer" }
-repowiki-wiki = { path = "crates/wiki" }
-repowiki-export = { path = "crates/export" }
-repowiki-ingest = { path = "crates/ingest" }
-repowiki-server = { path = "crates/server" }
+repowiki-core = { version = "0.5.0", path = "crates/core" }
+repowiki-scanner = { version = "0.5.0", path = "crates/scanner" }
+repowiki-graph = { version = "0.5.0", path = "crates/graph" }
+repowiki-cache = { version = "0.5.0", path = "crates/cache" }
+repowiki-llm = { version = "0.5.0", path = "crates/llm" }
+repowiki-rag = { version = "0.5.0", path = "crates/rag" }
+repowiki-index = { version = "0.5.0", path = "crates/index" }
+repowiki-analyzer = { version = "0.5.0", path = "crates/analyzer" }
+repowiki-wiki = { version = "0.5.0", path = "crates/wiki" }
+repowiki-export = { version = "0.5.0", path = "crates/export" }
+repowiki-ingest = { version = "0.5.0", path = "crates/ingest" }
+repowiki-server = { version = "0.5.0", path = "crates/server" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
