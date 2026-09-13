@@ -1,0 +1,9 @@
+[package]
+name = "repowiki-wiki"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+repowiki-core = { workspace = true }
+repowiki-graph = { workspace = true }
+regex = { workspace = true }
