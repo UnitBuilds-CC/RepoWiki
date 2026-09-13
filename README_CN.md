@@ -2,12 +2,12 @@
 
 <img src="docs/banner.png" alt="RepoWiki — 为任意代码库生成 wiki 文档" width="100%">
 
-[![Crates.io](https://img.shields.io/crates/v/repowiki.svg)](https://crates.io/crates/repowiki/)
+[![GitHub](https://img.shields.io/badge/github-UnitBuilds--CC/RepoWiki-blue.svg)](https://github.com/UnitBuilds-CC/RepoWiki)
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/he-yufeng/RepoWiki/actions/workflows/ci.yml/badge.svg)](https://github.com/he-yufeng/RepoWiki/actions/workflows/ci.yml)
+[![CI](https://github.com/UnitBuilds-CC/RepoWiki/actions/workflows/ci.yml/badge.svg)](https://github.com/UnitBuilds-CC/RepoWiki/actions/workflows/ci.yml)
 
-[**在线演示**](https://he-yufeng.github.io/RepoWiki/) · [**快速开始**](#快速开始) · [**工作原理**](#工作原理) · [English](README.md)
+[**快速开始**](#快速开始) · [**工作原理**](#工作原理) · [English](README.md)
 
 </div>
 
@@ -137,7 +137,7 @@ RepoWiki/
 ## 开发
 
 ```bash
-git clone https://github.com/he-yufeng/RepoWiki.git
+git clone https://github.com/UnitBuilds-CC/RepoWiki.git
 cd RepoWiki
 
 # 构建
@@ -155,16 +155,6 @@ cargo run -- serve --port 8000
 生成、Web 界面、图表这几块已经能用，页面之间互相链接，重跑只重新生成源码有变化的页面，`scan --site` 还能一键导出可直接部署 GitHub Pages 的静态站点。接下来主要是更丰富的图表：
 
 - **更多图表类型**：在依赖图之外再加调用图和数据流图——分析本来就走了 import，能挖出更多。
-
-## 相关项目
-
-如果 RepoWiki 帮你摸清了一个代码库，下面几个我做的东西也许你会喜欢：
-
-- [**CoreCoder**](https://github.com/he-yufeng/CoreCoder) — 想搞懂一个 coding agent 到底怎么运作？把整套约 1000 行引擎从头读到尾，而不是当黑箱。
-- [**FindJobs-Agent**](https://github.com/he-yufeng/FindJobs-Agent) — 别再手动刷招聘网站：它按你的简历给岗位排序，还能跑模拟面试。
-- [**ContractGuard**](https://github.com/he-yufeng/ContractGuard) — 签字前先把有风险的条款挑出来：它读合同、标出危险点。
-- [**GitSense**](https://github.com/he-yufeng/GitSense) — 想给开源做贡献？它帮你找到值得做的 issue，还能估你的 PR 多大概率被合。
-- [**CodeABC**](https://github.com/he-yufeng/CodeABC) — 不会写代码也能看懂一个项目，专给小白做的。
 
 ## 许可证
 

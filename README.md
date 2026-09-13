@@ -2,12 +2,12 @@
 
 <img src="docs/banner.png" alt="RepoWiki — generate wiki docs for any codebase" width="100%">
 
-[![Crates.io](https://img.shields.io/crates/v/repowiki.svg)](https://crates.io/crates/repowiki/)
+[![GitHub](https://img.shields.io/badge/github-UnitBuilds--CC/RepoWiki-blue.svg)](https://github.com/UnitBuilds-CC/RepoWiki)
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/he-yufeng/RepoWiki/actions/workflows/ci.yml/badge.svg)](https://github.com/he-yufeng/RepoWiki/actions/workflows/ci.yml)
+[![CI](https://github.com/UnitBuilds-CC/RepoWiki/actions/workflows/ci.yml/badge.svg)](https://github.com/UnitBuilds-CC/RepoWiki/actions/workflows/ci.yml)
 
-[**Live Demo**](https://he-yufeng.github.io/RepoWiki/) · [**Quick Start**](#quick-start) · [**How It Works**](#how-it-works) · [**Why RepoWiki?**](#why-repowiki) · [中文](README_CN.md)
+[**Quick Start**](#quick-start) · [**How It Works**](#how-it-works) · [**Why RepoWiki?**](#why-repowiki) · [中文](README_CN.md)
 
 </div>
 
@@ -137,7 +137,7 @@ RepoWiki/
 ## Development
 
 ```bash
-git clone https://github.com/he-yufeng/RepoWiki.git
+git clone https://github.com/UnitBuilds-CC/RepoWiki.git
 cd RepoWiki
 
 # build
@@ -155,16 +155,6 @@ cargo run -- serve --port 8000
 Generation, the web interface, and the diagrams work, pages link to each other, re-runs only regenerate the pages whose source changed, and `scan --site` exports a GitHub Pages-ready site. The next step is richer diagrams:
 
 - **More diagram types** — a call graph and a data-flow view alongside the dependency graph, since the analysis already walks imports and could surface more.
-
-## Related Projects
-
-If RepoWiki helped you find your way around a codebase, a few other things I've built:
-
-- [**CoreCoder**](https://github.com/he-yufeng/CoreCoder) — want to understand how a coding agent really works? Read the whole ~1k-line engine end to end, not a black box.
-- [**FindJobs-Agent**](https://github.com/he-yufeng/FindJobs-Agent) — stop sifting job boards by hand: it ranks postings against your resume and runs mock interviews.
-- [**ContractGuard**](https://github.com/he-yufeng/ContractGuard) — catch the risky clauses before you sign: it reads contracts and flags the dangerous bits.
-- [**GitSense**](https://github.com/he-yufeng/GitSense) — want to contribute to open source? It finds issues worth your time and gauges whether your PR will get merged.
-- [**CodeABC**](https://github.com/he-yufeng/CodeABC) — understand any codebase even if you don't code, built for non-programmers.
 
 ## License
 
