@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "model": "qwen3.7-flash",
+  "language": "en",
+  "pages": {
+    "reading-guide": {
+      "inputs": "qwen3.7-flash:en:guide:30d37203ae37e1af21fb0d9b:a6aac2101c60955e7977ac20"
+    },
+    "modules/index": {
+      "inputs": "page:ea1916ca18fd7134d6fa74df"
+    },
+    "modules/cache": {
+      "inputs": "page:98c4da4f97a79b0e98bb8903"
+    },
+    "modules/llm": {
+      "inputs": "page:d886b3d265ee6f870f040a78"
+    },
+    "modules/ingest": {
+      "inputs": "page:02096156759c5d63eef69984"
+    },
+    "modules/server": {
+      "inputs": "page:9080b6a2cb1b9867af7f51b9"
+    },
+    "index": {
+      "inputs": "qwen3.7-flash:en:overview:30d37203ae37e1af21fb0d9b"
+    },
+    "modules/cli": {
+      "inputs": "page:5dd6a1bc3da71bb178266384"
+    },
+    "modules/frontend": {
+      "inputs": "page:8365fb7779eeddb21189bed3"
+    },
+    "architecture": {
+      "inputs": "qwen3.7-flash:en:arch:4b6bfcc4cf085b877610433a"
+    },
+    "modules/root": {
+      "inputs": "page:d579544893ddd5a90c09e139"
+    },
+    "modules/export": {
+      "inputs": "page:884d425b70ba72eb431d91ad"
+    },
+    "symbols": {
+      "inputs": "page:1a12edeaba1f2848c00de722"
+    },
+    "modules/scanner": {
+      "inputs": "page:1ed55dbc02ea24bbde35286d"
+    },
+    "modules/core": {
+      "inputs": "page:127a71c6a0110b387acd3a75"
+    },
+    "modules/.github": {
+      "inputs": "page:1d259f1b048fc44bb18a3bb3"
+    },
+    "modules/graph": {
+      "inputs": "page:e5e9e0bd0ec038858c56db62"
+    },
+    "modules/analyzer": {
+      "inputs": "page:02d8a9910966082f03562e5f"
+    },
+    "modules/rag": {
+      "inputs": "page:b29067c870458fb2e854f0dc"
+    }
+  }
+}
