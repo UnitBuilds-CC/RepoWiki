@@ -2,8 +2,8 @@
 
 <img src="docs/banner.png" alt="RepoWiki — generate wiki docs for any codebase" width="100%">
 
-[![PyPI](https://img.shields.io/pypi/v/repowiki.svg)](https://pypi.org/project/repowiki/)
-[![Python](https://img.shields.io/pypi/pyversions/repowiki.svg)](https://pypi.org/project/repowiki/)
+[![Crates.io](https://img.shields.io/crates/v/repowiki.svg)](https://crates.io/crates/repowiki/)
+[![Rust](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/he-yufeng/RepoWiki/actions/workflows/ci.yml/badge.svg)](https://github.com/he-yufeng/RepoWiki/actions/workflows/ci.yml)
 
@@ -19,21 +19,21 @@ The live demo is RepoWiki eating its own dog food: the wiki for this very repo, 
 
 | | DeepWiki | deepwiki-open | **RepoWiki** |
 |---|---------|--------------|-------------|
-| Deploy | SaaS only | Docker Compose | **`pip install repowiki`** |
+| Deploy | SaaS only | Docker Compose | **`cargo install repowiki`** |
 | Local repos | No | No | **Yes** |
 | CLI | No | No | **Yes** |
 | Web UI | Yes | Yes | **Yes** |
 | Export | Web only | Web only | **Markdown / JSON / HTML** |
 | Reading guide | No | No | **PageRank + guided path** |
 | Terminal Q&A | No | No | **`repowiki chat`** |
-| Dependencies | N/A | Docker + PostgreSQL | **Python + SQLite** |
+| Dependencies | N/A | Docker + PostgreSQL | **Rust + SQLite** |
 
 ## Quick Start
 
 ```bash
-pip install repowiki
+cargo install repowiki
 
-# set your API key (DeepSeek, OpenAI, Anthropic, etc.)
+# set your API key (DeepSeek, OpenAI, Anthropic, OpenRouter, etc.)
 export DEEPSEEK_API_KEY=<your-api-key>
 # or
 repowiki config set api_key <your-api-key>
@@ -50,8 +50,7 @@ GITHUB_TOKEN=ghp_xxx repowiki scan https://github.com/acme/private-repo
 # generate self-contained HTML
 repowiki scan ./my-project --format html --open
 
-# start the web interface (wheels from PyPI ship the built UI)
-pip install repowiki[web]
+# start the web interface
 repowiki serve ./my-project   # optionally preload a project
 ```
 
@@ -59,22 +58,24 @@ RepoWiki respects `.gitignore` and `.repowikiignore` during scans. It also skips
 
 ## Features
 
+- **Indexed analysis** — deterministic pre-indexing (symbols, imports, call graph) feeds the LLM compact structured summaries instead of raw source, cutting token cost per module by ~85% while keeping descriptions grounded in real code.
 - **Structured wiki** — project overview, per-module docs, auto-detected architecture with Mermaid diagrams, and a PageRank "start here" reading path.
 - **Cross-linked pages**: a backticked symbol or file path that matches another wiki page becomes a link to it, as a relative `.md` link in Markdown and as in-page navigation in the HTML export. Fenced code blocks stay untouched, and a name defined on several pages links to the first one.
 - **Symbol index**: a global index page collects every key symbol the analysis documents, grouped by kind and then by module, with each entry linking back to the module page that owns it. A project with no documented symbols skips the page.
 - **Incremental re-runs**: the output directory keeps a `.repowiki-state.json` mapping each page to the inputs that generated it, so re-scanning only regenerates pages whose source changed and deletes pages of removed modules. JSON and HTML exports skip the write entirely when nothing changed. Pass `--full` to force a full rebuild. Unchanged pages also skip the LLM call itself: analysis results sit in a content-keyed SQLite cache (`~/.repowiki/cache.db`), so a re-scan after a small edit costs no API calls for untouched modules. To auto-refresh on commit, trigger a scan from `.git/hooks/post-commit` (`repowiki scan . --site -o docs/wiki &`) or from CI on push — the caches make that cheap, so no watcher daemon is needed.
-- **Import-aware ranking** — resolves Python and JS/TS imports before ranking files, and skips minified/generated bundles so they don't burn LLM context.
+- **Import-aware ranking** — resolves Python, JS/TS, Go, Rust, Java, and C/C++ imports before ranking files, and skips minified/generated bundles so they don't burn LLM context.
 - **Honest coverage reporting** — when the scan can't take the whole repo, it says so: the overview page and the CLI both flag partial coverage (files kept vs. candidates, oversized and excluded paths), so a wiki never quietly claims to be complete.
 - **Three output formats** — a Markdown directory to commit, structured JSON, or a self-contained HTML file to share (diagrams included).
 - **Static site publishing**: `repowiki scan . --site` drops a docsify loader (`index.html` + `.nojekyll`) into the Markdown export, so the output directory can go straight onto GitHub Pages.
 - **Web viewer + terminal chat**: a three-column browser UI, or `repowiki chat .` for grounded Q&A in the terminal. Chat is multi-turn: the conversation so far goes into each prompt, so follow-up questions work in both the web UI and the CLI. The built-in TF-IDF index (no embeddings service) persists across runs and a second session on an unchanged repo starts warm.
-- **CLI-first** — no Docker, no database server, no browser required.
+- **CLI-first** — single static binary, no runtime, no Docker, no database server, no browser required.
 
 ```bash
 repowiki scan .                    # generate wiki
 repowiki scan . --full             # rebuild every page, ignoring incremental state
 repowiki scan . -f html --open     # open in browser
 repowiki scan . -l zh              # Chinese output
+repowiki index .                   # pre-index without LLM (symbols, imports, call graph)
 repowiki chat .                    # multi-turn Q&A about the code, remembers the session
 repowiki map .                     # ranked repo map, zero LLM calls
 repowiki map . --format json       # prompt-ready ranked list for agents
@@ -83,10 +84,10 @@ repowiki scan . --site             # markdown export plus a GitHub Pages-ready l
 
 ## Languages & Models
 
-Detects Python, JavaScript, TypeScript, Go, Rust, Java, Kotlin, C/C++, C#, Ruby, PHP, Swift, and 30+ more. Any of litellm's 100+ providers works — pick one with an alias or pass it directly:
+Detects Python, JavaScript, TypeScript, Go, Rust, Java, Kotlin, C/C++, C#, Ruby, PHP, Swift, and 30+ more. Works with DeepSeek, OpenAI, Anthropic, Google Gemini, OpenRouter, and any OpenAI-compatible endpoint:
 
 ```bash
-repowiki config set model deepseek   # deepseek / claude / gpt / gemini / qwen / kimi / glm ...
+repowiki config set model deepseek   # deepseek / claude / gpt / gemini / openrouter/...
 repowiki scan . -m gpt               # or pass a model directly
 ```
 
@@ -96,7 +97,7 @@ RepoWiki looks for config in this order:
 1. CLI flags (`-m`, `-l`, `-o`)
 2. Environment variables (`REPOWIKI_MODEL`, `REPOWIKI_API_KEY`)
 3. Config file (`~/.repowiki/config.json`)
-4. Provider-specific env vars (`DEEPSEEK_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`)
+4. Provider-specific env vars (`DEEPSEEK_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`)
 
 For private GitHub repositories, set `GITHUB_TOKEN` (or `GH_TOKEN`): the clone goes out authenticated and the token is used only inside the git invocation, never written to logs or error output.
 
@@ -104,30 +105,22 @@ For private GitHub repositories, set `GITHUB_TOKEN` (or `GH_TOKEN`): the clone g
 
 ```
 RepoWiki/
-├── src/repowiki/
-│   ├── cli.py              # Click CLI with scan/serve/chat/config commands
-│   ├── config.py           # Configuration management
-│   ├── core/
-│   │   ├── scanner.py      # File scanning with language detection
-│   │   ├── analyzer.py     # Multi-step LLM analysis pipeline
-│   │   ├── graph.py        # Dependency graph + PageRank
-│   │   ├── wiki_builder.py # Wiki page assembly
-│   │   ├── rag.py          # TF-IDF retrieval for Q&A
-│   │   ├── cache.py        # SQLite caching
-│   │   └── state.py        # Incremental regeneration state
-│   ├── llm/
-│   │   ├── client.py       # litellm async wrapper
-│   │   └── prompts.py      # Structured prompt templates
-│   ├── ingest/
-│   │   ├── local.py        # Local directory ingestion
-│   │   └── github.py       # Git clone with caching
-│   ├── export/
-│   │   ├── markdown.py     # Markdown directory export
-│   │   ├── json_export.py  # JSON export
-│   │   └── html.py         # Self-contained HTML export
-│   └── server/             # FastAPI web backend
-├── frontend/               # React + Vite + TailwindCSS
-├── pyproject.toml
+├── crates/
+│   ├── core/          # Shared models, config, errors
+│   ├── scanner/       # File scanning + language detection
+│   ├── graph/         # Import resolution + PageRank
+│   ├── index/         # Symbol extraction + call graph
+│   ├── cache/         # SQLite content-keyed cache
+│   ├── llm/           # Multi-provider HTTP client
+│   ├── analyzer/      # Indexed LLM analysis pipeline
+│   ├── wiki/          # Wiki page assembly
+│   ├── rag/           # TF-IDF retrieval for Q&A
+│   ├── export/        # Markdown / JSON / HTML export
+│   ├── ingest/        # Local dir + GitHub clone
+│   ├── server/        # Axum web backend
+│   └── cli/           # CLI entry point
+├── frontend/          # React + Vite + TailwindCSS
+├── Cargo.toml
 └── LICENSE
 ```
 
@@ -136,9 +129,8 @@ RepoWiki/
 ![RepoWiki pipeline](docs/architecture.png)
 
 1. **Scan** — Walk the directory tree, filter out binaries, generated bundles, and oversized files, detect languages and entry points
-2. **Graph** — Resolve imports across 6 languages, including Python package-relative and
-   JavaScript/TypeScript relative modules, then run PageRank to rank file importance
-3. **Analyze** — Send file tree + key files to LLM in 4 structured passes (overview, modules, architecture, reading guide)
+2. **Index** — Extract symbols, resolve imports across 6+ languages, build a call graph, run PageRank — all deterministic, zero LLM calls
+3. **Analyze** — Feed the LLM compact structured index summaries instead of raw source, in 4 passes (overview, modules, architecture, reading guide)
 4. **Cache** — Store results in SQLite keyed by content hash, skip unchanged files on re-scan
 5. **Export** — Assemble wiki pages with Mermaid diagrams and source links, output in chosen format
 
@@ -148,15 +140,14 @@ RepoWiki/
 git clone https://github.com/he-yufeng/RepoWiki.git
 cd RepoWiki
 
-# backend
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,web]"
+# build
+cargo build --workspace
 
-# frontend
+# frontend (optional, for web UI)
 cd frontend && npm install && npm run dev
 
-# run backend
-repowiki serve --port 8000
+# run
+cargo run -- serve --port 8000
 ```
 
 ## Roadmap
