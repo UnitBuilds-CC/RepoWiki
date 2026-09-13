@@ -2,6 +2,9 @@
 name = "repowiki-server"
 version.workspace = true
 edition.workspace = true
+description.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
 repowiki-core = { workspace = true }

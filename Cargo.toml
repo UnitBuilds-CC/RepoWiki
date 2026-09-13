@@ -17,9 +17,12 @@ members = [
 ]
 
 [workspace.package]
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
 license = "MIT"
+description = "Generate comprehensive wiki documentation for any codebase from terminal or browser"
+repository = "https://github.com/UnitBuilds-CC/RepoWiki"
+homepage = "https://github.com/UnitBuilds-CC/RepoWiki"
 
 [workspace.dependencies]
 repowiki-core = { path = "crates/core" }
