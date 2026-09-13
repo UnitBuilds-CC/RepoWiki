@@ -1,0 +1,11 @@
+[package]
+name = "repowiki-scanner"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+repowiki-core = { workspace = true }
+walkdir = { workspace = true }
+ignore = { workspace = true }
+regex = { workspace = true }
+tracing = { workspace = true }

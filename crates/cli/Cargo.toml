@@ -1,0 +1,29 @@
+[package]
+name = "repowiki-cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "repowiki"
+path = "src/main.rs"
+
+[dependencies]
+repowiki-core = { workspace = true }
+repowiki-scanner = { workspace = true }
+repowiki-graph = { workspace = true }
+repowiki-cache = { workspace = true }
+repowiki-llm = { workspace = true }
+repowiki-rag = { workspace = true }
+repowiki-index = { workspace = true }
+repowiki-analyzer = { workspace = true }
+repowiki-wiki = { workspace = true }
+repowiki-export = { workspace = true }
+repowiki-ingest = { workspace = true }
+repowiki-server = { workspace = true }
+axum = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+console = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing-subscriber = { workspace = true }

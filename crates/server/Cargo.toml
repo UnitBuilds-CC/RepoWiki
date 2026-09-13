@@ -1,0 +1,25 @@
+[package]
+name = "repowiki-server"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+repowiki-core = { workspace = true }
+repowiki-cache = { workspace = true }
+repowiki-scanner = { workspace = true }
+repowiki-graph = { workspace = true }
+repowiki-llm = { workspace = true }
+repowiki-rag = { workspace = true }
+repowiki-analyzer = { workspace = true }
+repowiki-wiki = { workspace = true }
+repowiki-ingest = { workspace = true }
+axum = { workspace = true }
+axum-extra = { workspace = true }
+tower-http = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+uuid = { version = "1", features = ["v4"] }
+futures = "0.3"
+async-stream = "0.3"

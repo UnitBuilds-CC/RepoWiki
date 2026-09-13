@@ -1,0 +1,14 @@
+[package]
+name = "repowiki-analyzer"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+repowiki-core = { workspace = true }
+repowiki-cache = { workspace = true }
+repowiki-graph = { workspace = true }
+repowiki-llm = { workspace = true }
+repowiki-index = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }

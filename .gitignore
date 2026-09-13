@@ -33,3 +33,7 @@ src/repowiki/server/static/
 
 .DS_Store
 Thumbs.db
+
+# Rust
+target/
+wiki/

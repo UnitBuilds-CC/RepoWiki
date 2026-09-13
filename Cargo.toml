@@ -1,0 +1,60 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/scanner",
+    "crates/graph",
+    "crates/cache",
+    "crates/llm",
+    "crates/rag",
+    "crates/index",
+    "crates/analyzer",
+    "crates/wiki",
+    "crates/export",
+    "crates/ingest",
+    "crates/server",
+    "crates/cli",
+]
+
+[workspace.package]
+version = "0.4.1"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+repowiki-core = { path = "crates/core" }
+repowiki-scanner = { path = "crates/scanner" }
+repowiki-graph = { path = "crates/graph" }
+repowiki-cache = { path = "crates/cache" }
+repowiki-llm = { path = "crates/llm" }
+repowiki-rag = { path = "crates/rag" }
+repowiki-index = { path = "crates/index" }
+repowiki-analyzer = { path = "crates/analyzer" }
+repowiki-wiki = { path = "crates/wiki" }
+repowiki-export = { path = "crates/export" }
+repowiki-ingest = { path = "crates/ingest" }
+repowiki-server = { path = "crates/server" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+regex = "1"
+sha2 = "0.10"
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+walkdir = "2"
+ignore = "0.4"
+petgraph = "0.7"
+rusqlite = { version = "0.32", features = ["bundled"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+axum = { version = "0.8", features = ["ws"] }
+axum-extra = { version = "0.10", features = ["typed-header"] }
+tower-http = { version = "0.6", features = ["cors", "fs"] }
+clap = { version = "4", features = ["derive"] }
+dirs = "6"
+toml = "0.8"
+console = "0.15"
+dialoguer = "0.11"
+hex = "0.4"

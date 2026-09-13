@@ -1,0 +1,13 @@
+[package]
+name = "repowiki-export"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+repowiki-core = { workspace = true }
+repowiki-wiki = { workspace = true }
+repowiki-cache = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+regex = { workspace = true }

@@ -1,0 +1,13 @@
+[package]
+name = "repowiki-cache"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+repowiki-core = { workspace = true }
+rusqlite = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+dirs = { workspace = true }
+thiserror = { workspace = true }
+hex = { workspace = true }
