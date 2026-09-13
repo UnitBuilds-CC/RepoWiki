@@ -30,15 +30,22 @@ The Python original works well, but it needs a Python runtime, pulls in `litellm
 
 Same wiki output, same CLI interface, same three export formats — just faster, smaller, and cheaper to run.
 
-## Quick Start
+## Installation
 
 ```bash
-# build from source (not yet on crates.io)
+# install from crates.io (recommended)
+cargo install repowiki-cli
+
+# or build from source
 git clone https://github.com/UnitBuilds-CC/RepoWiki.git
 cd RepoWiki
 cargo build --release
 ./target/release/repowiki --help
+```
 
+## Quick Start
+
+```bash
 # set your API key (DeepSeek, OpenAI, Anthropic, OpenRouter, etc.)
 export DEEPSEEK_API_KEY=<your-api-key>
 # or
@@ -158,7 +165,6 @@ cargo run -- serve --port 8000
 
 The core pipeline works end-to-end: scan, index, analyze, export in all three formats, web UI, terminal chat. The indexed-analysis architecture is the key improvement over the Python original. Next steps:
 
-- **crates.io publish** — once the wiki output quality is validated against the Python original across a few real repos.
 - **More diagram types** — a call graph and a data-flow view alongside the dependency graph, since the analysis already walks imports and could surface more.
 - **Parallel file reading** — the scanner is currently single-threaded; the index and analysis stages already parallelize.
 
