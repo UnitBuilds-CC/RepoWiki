@@ -306,6 +306,17 @@ impl Analyzer {
     }
 }
 
+fn truncate_utf8(s: &str, max_bytes: usize) -> &str {
+    if s.len() <= max_bytes {
+        return s;
+    }
+    let mut end = max_bytes;
+    while !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    &s[..end]
+}
+
 fn build_key_files_context(project: &ProjectContext) -> String {
     let parts: Vec<String> = project
         .files
@@ -318,7 +329,7 @@ fn build_key_files_context(project: &ProjectContext) -> String {
                 &f.preview
             };
             let content = if content.len() > 4096 {
-                format!("{}... (truncated)", &content[..4096])
+                format!("{}... (truncated)", truncate_utf8(content, 4096))
             } else {
                 content.clone()
             };
@@ -440,4 +451,30 @@ async fn analyze_one_module(
         let _ = cache.put(&cache_key, &val);
     }
     (Some(doc), false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::truncate_utf8;
+
+    #[test]
+    fn truncate_utf8_keeps_short_input() {
+        assert_eq!(truncate_utf8("hello", 4096), "hello");
+    }
+
+    #[test]
+    fn truncate_utf8_stops_before_multibyte_boundary() {
+        let mut s = "a".repeat(4094);
+        s.push('─');
+        s.push('b');
+        let out = truncate_utf8(&s, 4096);
+        assert_eq!(out.len(), 4094);
+        assert!(s.starts_with(out));
+    }
+
+    #[test]
+    fn truncate_utf8_handles_ascii_cut() {
+        let s = "x".repeat(5000);
+        assert_eq!(truncate_utf8(&s, 4096).len(), 4096);
+    }
 }
